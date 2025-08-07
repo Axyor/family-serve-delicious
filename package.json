@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
-    "@family-serve/database": "file:packages/database",
     "dotenv": "^16.3.1"
   }
 }
