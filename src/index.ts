@@ -2,11 +2,17 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { config } from 'dotenv';
-import { Database, EGender, EGroupRole, EDietaryRestriction } from '@family-serve/database';
+import {
+    Database,
+    EGender,
+    EGroupRole,
+    EDietaryRestriction,
+    EDietaryRestrictionType
+} from '@axyor/family-serve-database';
 
 config();
 
-const server = new McpServer({
+export const server = new McpServer({
     name: "family-serve-delicious",
     version: "1.0.0"
 });
@@ -21,7 +27,26 @@ const initializeDatabase = async () => {
 };
 
 let db: Database;
+export const setDatabase = (database: Database) => {
+    db = database;
+};
 
+
+export const groupResourceHandler = async (uri: URL, variables: Record<string, unknown>) => {
+    const groupId = variables.groupId as string;
+    const group = await db.getGroupService().getGroup(groupId);
+
+    if (!group) {
+        return { contents: [] } as any;
+    }
+
+    return {
+        contents: [{
+            uri: uri.href,
+            text: JSON.stringify(group, null, 2)
+        }]
+    } as any;
+};
 
 server.registerResource(
     "group",
@@ -30,22 +55,18 @@ server.registerResource(
         title: "Group Information",
         description: "Access group information and members"
     },
-    async (uri, variables) => {
-        const groupId = variables.groupId as string;
-        const group = await db.getGroupService().getGroup(groupId);
-
-        if (!group) {
-            return { contents: [] };
-        }
-
-        return {
-            contents: [{
-                uri: uri.href,
-                text: JSON.stringify(group, null, 2)
-            }]
-        };
-    }
+    groupResourceHandler
 );
+
+export const createGroupHandler = async ({ name }: { name: string }) => {
+    const group = await db.getGroupService().createGroup(name);
+    return {
+        content: [{
+        type: "text" as const,
+            text: `Created group "${name}" with ID: ${group.id ?? '[unknown]'}`
+        }]
+    } as any;
+};
 
 server.registerTool(
     "create-group",
@@ -56,17 +77,47 @@ server.registerTool(
             name: z.string().describe("Name of the group")
         }
     },
-    async ({ name }) => {
-        const group = await db.getGroupService().createGroup(name);
-        return {
-            content: [{
-                type: "text",
-                text: `Created group "${name}" with ID: ${group._id}`
-            }]
-        };
-    }
+    createGroupHandler
 );
 
+
+export const addMemberHandler = async ({ groupId, firstName, lastName, age, gender, role, restrictions, allergies, likes, dislikes, healthNotes }: {
+    groupId: string,
+    firstName: string,
+    lastName: string,
+    age: number,
+    gender: EGender,
+    role?: EGroupRole,
+    restrictions?: Array<{ type: EDietaryRestrictionType, reason: EDietaryRestriction | string, notes?: string }>,
+    allergies?: string[],
+    likes?: string[],
+    dislikes?: string[],
+    healthNotes?: string
+}) => {
+    const member = await db.getGroupService().addMember(groupId, {
+        firstName,
+        lastName,
+        age,
+        gender,
+        role: role || EGroupRole.MEMBER,
+        dietaryProfile: {
+            preferences: {
+                likes: likes || [],
+                dislikes: dislikes || []
+            },
+            allergies: allergies || [],
+            restrictions: restrictions || [],
+            healthNotes
+        }
+    });
+
+    return {
+        content: [{
+        type: "text" as const,
+            text: `Added ${firstName} ${lastName} to group ${groupId}`
+        }]
+    } as any;
+};
 
 server.registerTool(
     "add-member",
@@ -78,45 +129,20 @@ server.registerTool(
             firstName: z.string(),
             lastName: z.string(),
             age: z.number(),
-            gender: z.enum([EGender.MALE, EGender.FEMALE]),
-            role: z.enum([EGroupRole.ADMIN, EGroupRole.MEMBER]).optional(),
-            restrictions: z.array(z.enum([
-                EDietaryRestriction.VEGETARIAN,
-                EDietaryRestriction.VEGAN,
-                EDietaryRestriction.GLUTEN_FREE,
-                EDietaryRestriction.DAIRY_FREE
-            ])).optional(),
+            gender: z.nativeEnum(EGender),
+            role: z.nativeEnum(EGroupRole).optional(),
+            restrictions: z.array(z.object({
+                type: z.nativeEnum(EDietaryRestrictionType),
+                reason: z.union([z.nativeEnum(EDietaryRestriction), z.string()]),
+                notes: z.string().optional()
+            })).optional(),
             allergies: z.array(z.string()).optional(),
             likes: z.array(z.string()).optional(),
             dislikes: z.array(z.string()).optional(),
             healthNotes: z.string().optional()
         }
     },
-    async ({ groupId, firstName, lastName, age, gender, role, restrictions, allergies, likes, dislikes, healthNotes }) => {
-        const member = await db.getGroupService().addMember(groupId, {
-            firstName,
-            lastName,
-            age,
-            gender,
-            role: role || EGroupRole.MEMBER,
-            dietaryProfile: {
-                preferences: {
-                    likes: likes || [],
-                    dislikes: dislikes || []
-                },
-                allergies: allergies || [],
-                restrictions: restrictions || [],
-                healthNotes
-            }
-        });
-
-        return {
-            content: [{
-                type: "text",
-                text: `Added ${firstName} ${lastName} to group ${groupId}`
-            }]
-        };
-    }
+    addMemberHandler
 );
 const start = async () => {
     try {
@@ -133,4 +159,22 @@ const start = async () => {
     }
 };
 
-start();
+// Graceful shutdown on SIGINT
+process.on('SIGINT', async () => {
+    try {
+        if (db) {
+            await db.disconnect();
+            console.log('Disconnected from MongoDB');
+        }
+    } catch (e) {
+        console.error('Error during shutdown:', e);
+    } finally {
+        process.exit(0);
+    }
+});
+
+if (process.env.NODE_ENV !== 'test') {
+    start();
+}
+
+export { start };
