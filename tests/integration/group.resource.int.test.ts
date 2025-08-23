@@ -1,11 +1,11 @@
 // Ensure we don't auto-start the server in tests
 process.env.NODE_ENV = 'test';
 import { jest } from '@jest/globals';
-export {};
+export { };
 
 // ESM mocking of the DB package to avoid pulling mongoose
 await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
-  Database: class Database {},
+  Database: class Database { },
   EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
   EGroupRole: { ADMIN: 'ADMIN', MEMBER: 'MEMBER' },
   EDietaryRestrictionType: { FORBIDDEN: 'FORBIDDEN', REDUCED: 'REDUCED' },
@@ -13,7 +13,11 @@ await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
     VEGETARIAN: 'VEGETARIAN', VEGAN: 'VEGAN', GLUTEN_FREE: 'GLUTEN_FREE',
     DAIRY_FREE: 'DAIRY_FREE', NO_PORK: 'NO_PORK', LOW_CARB: 'LOW_CARB'
   },
-  default: class Database {},
+  EActivityLevel: { SEDENTARY: 'SEDENTARY', LIGHTLY_ACTIVE: 'LIGHTLY_ACTIVE', MODERATELY_ACTIVE: 'MODERATELY_ACTIVE', VERY_ACTIVE: 'VERY_ACTIVE' },
+  EHealthGoal: { WEIGHT_LOSS: 'WEIGHT_LOSS', MUSCLE_GAIN: 'MUSCLE_GAIN', MAINTENANCE: 'MAINTENANCE', IMPROVE_DIGESTION: 'IMPROVE_DIGESTION', HEART_HEALTH: 'HEART_HEALTH' },
+  EBudgetLevel: { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' },
+  ECookingSkill: { BEGINNER: 'BEGINNER', INTERMEDIATE: 'INTERMEDIATE', ADVANCED: 'ADVANCED' },
+  default: class Database { },
 }));
 
 const { groupResourceHandler, setDatabase } = await import('../../src/index');
@@ -27,7 +31,7 @@ class MockGroupService {
 class MockDatabase {
   private svc = new MockGroupService();
   getGroupService() { return this.svc; }
-  disconnect = jest.fn(async () => {});
+  disconnect = jest.fn(async () => { });
 }
 
 describe('Read-only: group resource', () => {

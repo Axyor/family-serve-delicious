@@ -1,11 +1,9 @@
-// Ensure we don't auto-start the server in tests
 process.env.NODE_ENV = 'test';
 import { jest } from '@jest/globals';
-export {};
+export { };
 
-// Mock the DB package to avoid loading mongoose
 await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
-  Database: class Database {},
+  Database: class Database { },
   EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
   EGroupRole: { ADMIN: 'ADMIN', MEMBER: 'MEMBER' },
   EDietaryRestrictionType: { FORBIDDEN: 'FORBIDDEN', REDUCED: 'REDUCED' },
@@ -13,13 +11,17 @@ await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
     VEGETARIAN: 'VEGETARIAN', VEGAN: 'VEGAN', GLUTEN_FREE: 'GLUTEN_FREE',
     DAIRY_FREE: 'DAIRY_FREE', NO_PORK: 'NO_PORK', LOW_CARB: 'LOW_CARB'
   },
-  default: class Database {},
+  EActivityLevel: { SEDENTARY: 'SEDENTARY', LIGHTLY_ACTIVE: 'LIGHTLY_ACTIVE', MODERATELY_ACTIVE: 'MODERATELY_ACTIVE', VERY_ACTIVE: 'VERY_ACTIVE' },
+  EHealthGoal: { WEIGHT_LOSS: 'WEIGHT_LOSS', MUSCLE_GAIN: 'MUSCLE_GAIN', MAINTENANCE: 'MAINTENANCE', IMPROVE_DIGESTION: 'IMPROVE_DIGESTION', HEART_HEALTH: 'HEART_HEALTH' },
+  EBudgetLevel: { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' },
+  ECookingSkill: { BEGINNER: 'BEGINNER', INTERMEDIATE: 'INTERMEDIATE', ADVANCED: 'ADVANCED' },
+  default: class Database { },
 }));
 
 const mod = await import('../../src/index');
 
 class MockDatabase {
-  disconnect = jest.fn(async () => {});
+  disconnect = jest.fn(async () => { });
 }
 
 describe('Unit: graceful shutdown', () => {
@@ -29,7 +31,6 @@ describe('Unit: graceful shutdown', () => {
 
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as any);
 
-    // Emit SIGINT and wait a tick for async handler
     process.emit('SIGINT');
     await new Promise((r) => setImmediate(r));
 
