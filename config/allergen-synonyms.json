@@ -1,0 +1,216 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "_comment": "Canonical allergen key -> synonyms (multi-language). Lowercased comparison. Add new entries as needed.",
+    "peanut": [
+        "peanut",
+        "peanuts",
+        "arachide",
+        "arachides",
+        "cacahuete",
+        "cacahuètes",
+        "groundnut",
+        "groundnuts"
+    ],
+    "almond": [
+        "almond",
+        "almonds",
+        "amande",
+        "amandes"
+    ],
+    "hazelnut": [
+        "hazelnut",
+        "hazelnuts",
+        "noisette",
+        "noisettes"
+    ],
+    "walnut": [
+        "walnut",
+        "walnuts",
+        "noix",
+        "cerneau",
+        "cerneaux"
+    ],
+    "cashew": [
+        "cashew",
+        "cashews",
+        "noix de cajou",
+        "cajou"
+    ],
+    "pecan": [
+        "pecan",
+        "pecans",
+        "noix de pécan",
+        "pécan"
+    ],
+    "pistachio": [
+        "pistachio",
+        "pistachios",
+        "pistache",
+        "pistaches"
+    ],
+    "macadamia": [
+        "macadamia",
+        "macadamias",
+        "noix de macadamia"
+    ],
+    "brazil nut": [
+        "brazil nut",
+        "brazil nuts",
+        "noix du brésil",
+        "noix du bresil"
+    ],
+    "pine nut": [
+        "pine nut",
+        "pine nuts",
+        "pignon",
+        "pignons",
+        "pignon de pin",
+        "pignons de pin"
+    ],
+    "chestnut": [
+        "chestnut",
+        "chestnuts",
+        "chataigne",
+        "chataignes",
+        "châtaigne",
+        "châtaignes"
+    ],
+    "tree nut": [
+        "tree nut",
+        "tree nuts",
+        "nuts",
+        "nut",
+        "noix",
+        "fruits à coque",
+        "fruit a coque"
+    ],
+    "dairy": [
+        "dairy",
+        "milk",
+        "cow milk",
+        "lait",
+        "lait de vache",
+        "produits laitiers"
+    ],
+    "egg": [
+        "egg",
+        "eggs",
+        "oeuf",
+        "œuf",
+        "oeufs",
+        "œufs"
+    ],
+    "fish": [
+        "fish",
+        "poisson",
+        "poissons"
+    ],
+    "crustacean": [
+        "crustacean",
+        "crustaceans",
+        "crustacé",
+        "crustacés"
+    ],
+    "mollusc": [
+        "mollusc",
+        "molluscs",
+        "mollusk",
+        "mollusks",
+        "mollusque",
+        "mollusques"
+    ],
+    "shellfish": [
+        "shellfish",
+        "fruit de mer",
+        "fruits de mer",
+        "fruits-de-mer"
+    ],
+    "soy": [
+        "soy",
+        "soya",
+        "soja"
+    ],
+    "sesame": [
+        "sesame",
+        "sesame seed",
+        "sesame seeds",
+        "sésame",
+        "graines de sésame"
+    ],
+    "celery": [
+        "celery",
+        "céleri",
+        "celeri"
+    ],
+    "mustard": [
+        "mustard",
+        "moutarde"
+    ],
+    "lupin": [
+        "lupin",
+        "lupine",
+        "lupins",
+        "graines de lupin"
+    ],
+    "sulphite": [
+        "sulphite",
+        "sulphites",
+        "sulfite",
+        "sulfites",
+        "anhydride sulfureux"
+    ],
+    "wheat": [
+        "wheat",
+        "blé",
+        "ble"
+    ],
+    "rye": [
+        "rye",
+        "seigle"
+    ],
+    "barley": [
+        "barley",
+        "orge"
+    ],
+    "oat": [
+        "oat",
+        "oats",
+        "avoine"
+    ],
+    "spelt": [
+        "spelt",
+        "épeautre",
+        "epeautre"
+    ],
+    "kamut": [
+        "kamut",
+        "blé khorasan",
+        "ble khorasan",
+        "khorasan"
+    ],
+    "gluten": [
+        "gluten"
+    ],
+    "sesame seed": [
+        "sesame seed",
+        "sesame seeds",
+        "graine de sésame",
+        "graines de sésame"
+    ],
+    "mustard seed": [
+        "mustard seed",
+        "mustard seeds",
+        "graine de moutarde",
+        "graines de moutarde"
+    ],
+    "sulfites": [
+        "sulfites",
+        "sulphites",
+        "anhydride sulfureux"
+    ],
+    "_meta_notes": [
+        "This file is editable: add synonyms as needed. Canonical keys appear in outputs.",
+        "Keep list lowercased for consistency; accents allowed.",
+        "tree nut acts as a generic bucket; individual nuts still listed."
+    ]
+}

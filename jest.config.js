@@ -8,6 +8,9 @@ export default {
     '^\\./db\\.js$': '<rootDir>/src/db.ts',
     '^\\./resources/group\\.resource\\.js$': '<rootDir>/src/resources/group.resource.ts',
     '^\\./tools/group\\.tools\\.js$': '<rootDir>/src/tools/group.tools.ts',
+    // Relative imports inside tools directory
+    '^\.\/group\.helpers\.js$': '<rootDir>/src/tools/group.helpers.ts',
+    '^\.\/group\.interfaces\.js$': '<rootDir>/src/tools/group.interfaces.ts',
     '^\.\./db\\.js$': '<rootDir>/src/db.ts',
     '^\.\./\.\./src/index\\.js$': '<rootDir>/src/index.ts',
     '^\.\./\.\./src/tools/group\\.tools\\.js$': '<rootDir>/src/tools/group.tools.ts',

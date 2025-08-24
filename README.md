@@ -29,9 +29,8 @@
 2. MCP Resource `group`: serializes a specific group
 3. Exposed read‑only tools:
 	- `find-group-by-name` (fast ID resolution)
-	- `group-full` (single group with members)
 	- `groups-summary` (paginated lightweight list, no members)
-	- `groups-full` (paginated list; optional members via flag)
+	- `group-recipe-context` (aggregated anonymized context for recipe generation)
 	- `find-members-by-restriction` (targeted filtering)
 4. System prompt (not included here) guides: role, safety, tool usage
 5. LLM answers = combination of injected context + tool results
@@ -43,16 +42,13 @@
 | Resource | `group` | Full group details (JSON) | Medium (members count) | Deep reasoning phase |
 | Tool | `find-group-by-name` | Resolve a name → ID | Very low | First step before context load |
 | Tool | `groups-summary` | List groups (no members) | Low | Exploration / selection |
-| Tool | `groups-full` | List groups (optional full members) | Medium→High (with members) | Batch comparison; prefer summary + selective drilldown |
-| Tool | `group-full` | Fetch single full group by ID | Medium | Focused reasoning after selection |
+| Tool | `group-recipe-context` | Aggregated anonymized recipe context | Low→Medium | Direct prompt injection |
 | Tool | `find-members-by-restriction` | Filtered subset of one group | Low → Medium | Constraint-focused reasoning |
 
 Suggested LLM strategy:
-1. Discovery: call `groups-summary` (or `find-group-by-name` if name known).
-2. Selection: choose target group IDs.
-3. Drilldown: call `group-full` for a single group OR `groups-full` with `includeMembers=false` for multi-group metadata.
-4. Deep detail: if absolutely required across many groups, call `groups-full` with `includeMembers=true` (avoid unless narrow slice).
-5. Targeted refinement: use `find-members-by-restriction` to pull only constrained subsets.
+1. Resolve group (via `find-group-by-name` or browse `groups-summary`).
+2. Fetch `group-recipe-context` for anonymized aggregated constraints.
+3. (Optional) Use `find-members-by-restriction` for focused constraint clarification.
 
 This minimizes token usage and keeps reasoning focused.
 
@@ -89,14 +85,13 @@ The server starts an MCP stdio transport. A client (editor / orchestrator / agen
 
 1. List resources & tools
 2. Resolve a groupId via `find-group-by-name`
-3. Load resource `group://{groupId}`
+3. Load resource `group://{groupId}` if you need raw structure, otherwise jump to `group-recipe-context`
 4. Call filtering tools for targeted analysis
 
 Returned formats:
 - Every tool now wraps data with `type` and `schemaVersion` fields (e.g. `{ "type": "groups-summary", "schemaVersion": 1, ... }`).
-- `groups-full` accepts `includeMembers` (default false) to control payload size.
 - Empty / null fields pruned server-side to reduce tokens.
-- Pagination: `limit` (<=100) & `offset` for `groups-summary` / `groups-full`.
+- Pagination: `limit` (<=100) & `offset` for `groups-summary`.
 
 Example minimal `groups-summary` response (pretty-printed for docs):
 ```json
@@ -115,19 +110,96 @@ Example minimal `groups-summary` response (pretty-printed for docs):
 }
 ```
 
-Example `group-full` response (truncated members):
+Example `group-recipe-context` response (simplified):
 ```json
 {
-	"type": "group-full",
+	"type": "group-recipe-context",
 	"schemaVersion": 1,
-	"data": {
-		"id": "g1",
-		"name": "Alpha",
-		"membersCount": 2,
-		"members": [ { "id": "m-1", "firstName": "F1", "metrics": { "weightKg": 71 } } ]
-	}
+	"group": { "id": "g1", "name": "Alpha", "size": 2 },
+	"members": [ { "id": "m-1", "alias": "M1", "ageGroup": "adult" } ],
+	"segments": { "ageGroups": { "adult": 2 } },
+	"allergies": [],
+	"hardRestrictions": [],
+	"stats": { "cookingSkillSpread": {} },
+	"hash": "sha256:abcd1234ef567890"
 }
 ```
+
+## 🧾 Allergen Synonyms Configuration
+
+To enable multilingual allergy aggregation without hard‑coding logic, the server loads a JSON mapping: `config/allergen-synonyms.json`.
+
+Format:
+```json
+{
+	"peanut": ["peanut", "peanuts", "arachide", "arachides"],
+	"dairy": ["dairy", "milk", "lait"]
+}
+```
+- Key = canonical form (appears in the payload).
+- Values = synonyms (case‑insensitive, whitespace normalized).
+- Any allergen not present falls back to its cleaned (lowercased) form.
+
+Loading:
+- Lazy loaded on the first `group-recipe-context` call.
+- Reverse index built (synonym → canonical) for O(1) lookup.
+
+Updating:
+1. Edit the JSON file.
+2. Restart the server (no dynamic reload yet).
+
+Best practices:
+- Include both local language and English variants.
+- Keep accents; they are lowercased but not stripped (adjust later if needed).
+- Avoid exact duplicates.
+
+Current limitations:
+- No severity weighting (future shape could be: { "peanut": { "synonyms": [...], "severity": "high" }} ).
+- No region scoping.
+
+Failure fallback: if the file can’t be read, aggregation degrades to plain lowercase grouping (no synonym fusion).
+
+## 🧪 Preference Pattern Configuration
+
+Negative / exclusion culinary preferences are parsed using a multilingual pattern file: `config/preference-patterns.json`.
+
+Structure:
+```jsonc
+{
+	"dislikeIndicators": ["dislike", "déteste", "odio"],
+	"avoidIndicators": ["avoid", "éviter", "vermeide"],
+	"excludeIndicators": ["no", "sans", "without", "sin"],
+	"splitDelimitersRegex": ",|;|/|\\\\| et | and | y | ou "
+}
+```
+
+How it works:
+- Each preference string from a member’s dietaryProfile.preferences is lower‑cased.
+- The code checks whether it starts with any indicator (longest indicators matched first).
+- The remainder of the string is split by `splitDelimitersRegex` into individual tokens.
+- Tokens are trimmed and stored as dislikes (soft negative signals).
+
+Why external config:
+- Expand to new languages without code changes.
+- Adjust token splitting for edge cases (e.g. add locale conjunctions).
+- Allow experimentation with detection scope.
+
+Updating:
+1. Edit the JSON file.
+2. Restart the server (no hot reload yet).
+
+Best practices:
+- Keep indicators singular (avoid duplicates like "avoid" and "avoid ").
+- Add longer, more specific phrases first (sorting by length is automatic to prefer longest match).
+- Include common conjunctions in `splitDelimitersRegex` for the languages you support.
+
+Limitations / Future ideas:
+- No sentiment weighting; all extracted tokens treated equally.
+- No mapping to standardized dislike taxonomy (future: map to ingredient ontology).
+- Only prefix matching; phrases like "I really dislike cilantro" aren’t caught (could add regex mode later).
+
+Fallback: if the file is missing or invalid, extraction silently degrades (only cuisinePreferences remain, dislikes may be empty).
+
 
 
 ## 🤝 Contributing

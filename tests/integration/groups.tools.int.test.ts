@@ -28,7 +28,7 @@ const toolMap: Record<string, any> = {};
 for (const t of allGroupTools()) toolMap[t.name] = t.handler;
 
 // Mock data
-const mkMember = (i: number) => ({
+const mkMember = (i: number, extras: any = {}) => ({
     id: `m-${i}`,
     role: 'MEMBER',
     firstName: `F${i}`,
@@ -42,10 +42,17 @@ const mkMember = (i: number) => ({
     cuisinePreferences: [],
     mealFrequency: undefined,
     fastingWindow: undefined,
+    dietaryProfile: undefined,
+    ...extras,
 });
 
 const groups = [
-    { id: 'g1', name: 'Alpha', members: [mkMember(1), mkMember(2)] },
+    {
+        id: 'g1', name: 'Alpha', members: [
+            mkMember(1, { cuisinePreferences: ['Italian', 'Thai'], dietaryProfile: { preferences: ['avoid cilantro'], allergies: ['Peanuts'], restrictions: [{ type: 'FORBIDDEN', reason: 'NO_PORK' }, { type: 'REDUCED', reason: 'LOW_CARB' }] } }),
+            mkMember(2, { cuisinePreferences: ['thai', 'Japanese'], dietaryProfile: { preferences: ['dislike okra'], allergies: ['peanuts', 'Shellfish'], restrictions: [{ type: 'FORBIDDEN', reason: 'GLUTEN_FREE' }] } }),
+        ]
+    },
     { id: 'g2', name: 'Beta', members: [mkMember(3)] },
     { id: 'g3', name: 'Gamma', members: [] },
 ];
@@ -74,27 +81,22 @@ describe('groups tools', () => {
         expect(payload.groups[0].members).toBeUndefined();
     });
 
-    test('groups-full without includeMembers excludes members arrays', async () => {
-        const res: any = await toolMap['groups-full']({ limit: 10 });
+    test('group-recipe-context returns anonymized context with aggregated allergies/restrictions', async () => {
+        const res: any = await toolMap['group-recipe-context']({ id: 'g1' });
         const payload = JSON.parse(res.content[0].text);
-        expect(payload.type).toBe('groups-full');
-        expect(payload.includeMembers).toBe(false);
-        expect(payload.groups[0].members).toBeUndefined();
-    });
-
-    test('groups-full with includeMembers includes members arrays', async () => {
-        const res: any = await toolMap['groups-full']({ limit: 5, includeMembers: true });
-        const payload = JSON.parse(res.content[0].text);
-        expect(payload.includeMembers).toBe(true);
-        const g1 = payload.groups.find((g: any) => g.id === 'g1');
-        expect(g1.members.length).toBe(2);
-    });
-
-    test('group-full returns a single group with members', async () => {
-        const res: any = await toolMap['group-full']({ id: 'g2' });
-        const payload = JSON.parse(res.content[0].text);
-        expect(payload.type).toBe('group-full');
-        expect(payload.data.id).toBe('g2');
-        expect(payload.data.members[0].id).toBe('m-3');
+        expect(payload.type).toBe('group-recipe-context');
+        expect(payload.group.id).toBe('g1');
+        expect(payload.members.length).toBe(2);
+        expect(payload.members[0].alias).toBeDefined();
+        expect(payload.hash).toMatch(/^sha256:/);
+        // Aggregation checks
+        const peanutAllergy = payload.allergies.find((a: any) => a.substance === 'peanut');
+        expect(peanutAllergy.count).toBe(2);
+        expect(new Set(peanutAllergy.members)).toEqual(new Set(['m-1', 'm-2']));
+        expect(payload.hardRestrictions).toEqual(expect.arrayContaining(['GLUTEN_FREE', 'NO_PORK']));
+        expect(payload.softRestrictions).toEqual(expect.arrayContaining(['LOW_CARB']));
+        // Preferences
+        expect(payload.softPreferences.cuisinesLiked).toEqual(expect.arrayContaining(['italian', 'japanese', 'thai']));
+        expect(payload.softPreferences.dislikes).toEqual(expect.arrayContaining(['cilantro', 'okra']));
     });
 });
