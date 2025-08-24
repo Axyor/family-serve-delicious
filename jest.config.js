@@ -9,6 +9,9 @@ export default {
     '^\\./resources/group\\.resource\\.js$': '<rootDir>/src/resources/group.resource.ts',
     '^\\./tools/group\\.tools\\.js$': '<rootDir>/src/tools/group.tools.ts',
     '^\.\./db\\.js$': '<rootDir>/src/db.ts',
+    '^\.\./\.\./src/index\\.js$': '<rootDir>/src/index.ts',
+    '^\.\./\.\./src/tools/group\\.tools\\.js$': '<rootDir>/src/tools/group.tools.ts',
+    '^\.\./\.\./src/db\\.js$': '<rootDir>/src/db.ts',
     // Any other src-relative .js import -> .ts (does not match node_modules)
     '^((?:\\.{1,2})/src/.*)\\.js$': '$1.ts'
   },
