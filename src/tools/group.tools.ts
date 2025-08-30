@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { getDatabase } from '../db.js';
-import { EDietaryRestriction, EDietaryRestrictionType } from '@axyor/family-serve-database';
-import { buildRecipeContext, structureGroup, prune } from './group.helpers.js';
+import { getDatabase } from '../db';
+type TDietaryRestrictionType = 'FORBIDDEN' | 'REDUCED';
+import { buildRecipeContext } from './group.helpers';
 
 
 export const findGroupByNameHandler = async (args: any) => {
@@ -9,7 +9,6 @@ export const findGroupByNameHandler = async (args: any) => {
     const group = await getDatabase().getGroupService().findByName(name);
     if (!group) return { content: [{ type: 'text' as const, text: `No group found for name: ${name}` }] } as any;
     const structured = {
-        // Recipe context building moved to helpers (buildRecipeContext)
         type: 'group-id-resolution',
         schemaVersion: 1,
         id: group.id,
@@ -24,18 +23,18 @@ export const findGroupByNameTool = () => ({
 });
 
 export const findMembersByRestrictionHandler = async (args: any) => {
-    const { groupId, restrictionType, reason } = args as { groupId: string; restrictionType: EDietaryRestrictionType; reason?: EDietaryRestriction | string };
+    const { groupId, restrictionType, reason } = args as { groupId: string; restrictionType: TDietaryRestrictionType; reason?: string };
     const result = await getDatabase().getGroupService().findMembersByRestriction(groupId, restrictionType, reason);
     if (!result) return { content: [{ type: 'text' as const, text: 'Group not found or no matching members' }] } as any;
     return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] } as any;
 };
 export const findMembersByRestrictionTool = () => ({
     name: 'find-members-by-restriction',
-    meta: { title: 'Find Members by Restriction', description: 'Filter members in a group by restriction type and optional reason', inputSchema: { groupId: z.string(), restrictionType: z.nativeEnum(EDietaryRestrictionType), reason: z.union([z.nativeEnum(EDietaryRestriction), z.string()]).optional() } },
+    meta: { title: 'Find Members by Restriction', description: 'Filter members in a group by restriction type and optional reason', inputSchema: { groupId: z.string(), restrictionType: z.enum(['FORBIDDEN', 'REDUCED']), reason: z.string().optional() } },
     handler: findMembersByRestrictionHandler
 });
 
-// Summary only (always no members, minimal fields)
+
 export const getGroupsSummaryHandler = async (args: any) => {
     const { limit = 20, offset = 0 } = args as { limit?: number; offset?: number };
     const service: any = getDatabase().getGroupService();
@@ -54,8 +53,6 @@ export const getGroupsSummaryTool = () => ({
     meta: { title: 'List Groups (Summary)', description: 'Lightweight summary list of groups (no members)', inputSchema: { limit: z.number().int().positive().max(100).optional(), offset: z.number().int().min(0).optional() } },
     handler: getGroupsSummaryHandler
 });
-
-// Recipe context building moved to helpers (buildRecipeContext)
 
 export const getGroupRecipeContextHandler = async (args: any) => {
     const { id, anonymize = true } = args as { id: string; anonymize?: boolean };

@@ -1,10 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { EDietaryRestrictionType } from '@axyor/family-serve-database';
-import { IAllergyAgg, IPrefPatterns, IGroupRecipeContext, IGroupRecipeContextMember } from './group.interfaces.js';
+import { IAllergyAgg, IPrefPatterns, IGroupRecipeContext, Counters } from './group.interfaces';
 
-// -------------------- Generic Helper: prune ---------------------------------
 export const prune = (value: any): any => {
     if (Array.isArray(value)) {
         const arr = value.map(v => prune(v)).filter(v => v !== undefined);
@@ -22,42 +20,6 @@ export const prune = (value: any): any => {
     return value;
 };
 
-// -------------------- Member serialization (generic) ------------------------
-export const serializeMember = (m: any) => prune({
-    id: m.id,
-    role: m.role,
-    firstName: m.firstName,
-    lastName: m.lastName,
-    age: m.age,
-    gender: m.gender,
-    metrics: prune({
-        weightKg: m.weightKg,
-        heightCm: m.heightCm,
-        activityLevel: m.activityLevel
-    }),
-    healthGoals: m.healthGoals,
-    nutritionTargets: m.nutritionTargets,
-    dietaryProfile: prune({
-        preferences: m.dietaryProfile?.preferences,
-        allergies: m.dietaryProfile?.allergies,
-        restrictions: m.dietaryProfile?.restrictions,
-        healthNotes: m.dietaryProfile?.healthNotes
-    }),
-    cuisinePreferences: m.cuisinePreferences,
-    budgetLevel: m.budgetLevel,
-    cookingSkill: m.cookingSkill,
-    mealFrequency: m.mealFrequency,
-    fastingWindow: m.fastingWindow
-});
-
-export const structureGroup = (group: any, includeMembers = true) => prune({
-    id: group.id,
-    name: group.name,
-    membersCount: group.members.length,
-    members: includeMembers ? group.members.map(serializeMember) : undefined
-});
-
-// -------------------- Age grouping ------------------------------------------
 export const ageGroup = (age?: number) => {
     if (age == null) return undefined;
     if (age < 13) return 'child';
@@ -66,43 +28,76 @@ export const ageGroup = (age?: number) => {
     return 'senior';
 };
 
-// -------------------- Internal loaders --------------------------------------
-let allergenSynonyms: Record<string, string[]> | null = null;
-let prefPatterns: IPrefPatterns | null = null;
-const allergenSynonymIndex: { built?: boolean; map: Record<string, string> } = { map: {} };
+class AllergenSynonymIndex {
+    private built: boolean = false;
+    private map: Record<string, string> = {};
+    private allergenSynonyms: Record<string, string[]> | null = null;
 
-const loadAllergenSynonyms = () => {
-    if (allergenSynonyms) return allergenSynonyms;
-    try {
-        const filePath = path.resolve(process.cwd(), 'config/allergen-synonyms.json');
-        allergenSynonyms = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    } catch {
-        allergenSynonyms = {};
-    }
-    return allergenSynonyms;
-};
-
-const ensureAllergenIndex = () => {
-    if (allergenSynonymIndex.built) return;
-    const syns = loadAllergenSynonyms() || {};
-    for (const [canonical, list] of Object.entries(syns as Record<string, string[]>)) {
-        const canonKey = canonical.toLowerCase();
-        const arr = Array.isArray(list) ? list : [];
-        const all = new Set<string>([canonical, ...arr]);
-        for (const term of all) {
-            const norm = term.trim().toLowerCase();
-            if (!norm) continue;
-            allergenSynonymIndex.map[norm] = canonKey;
+    private loadAllergenSynonyms(): Record<string, string[]> {
+        if (this.allergenSynonyms) return this.allergenSynonyms;
+        try {
+            const filePath = path.resolve(process.cwd(), 'config/allergen-synonyms.json');
+            this.allergenSynonyms = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        } catch (error) {
+            console.error('Error loading allergen synonyms:', error);
+            this.allergenSynonyms = {};
         }
+        return this.allergenSynonyms!;
     }
-    allergenSynonymIndex.built = true;
-};
+
+    public ensureIndex() {
+        if (this.built) return;
+        const syns = this.loadAllergenSynonyms() || {};
+        for (const [canonical, list] of Object.entries(syns as Record<string, string[]>)) {
+            const canonKey = canonical.toLowerCase();
+            const arr = Array.isArray(list) ? list : [];
+            const all = new Set<string>([canonical, ...arr]);
+            for (const term of all) {
+                const norm = term.trim().toLowerCase();
+                if (!norm) continue;
+                this.map[norm] = canonKey;
+            }
+        }
+        this.built = true;
+    }
+
+    public getCanonical(term: string): string | undefined {
+        this.ensureIndex();
+        return this.map[term.trim().toLowerCase()];
+    }
+
+    public getMap(): Record<string, string> {
+        this.ensureIndex();
+        return { ...this.map };
+    }
+}
+
+export function createAllergenSynonymIndex() {
+    return new AllergenSynonymIndex();
+}
+
+const allergenIndex = createAllergenSynonymIndex();
 
 const normalizeAllergen = (raw: string): string => {
     if (!raw) return '';
-    ensureAllergenIndex();
     const cleaned = raw.trim().toLowerCase().replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
-    return allergenSynonymIndex.map[cleaned] || cleaned;
+    return allergenIndex.getCanonical(cleaned) || cleaned;
+};
+
+let prefPatterns: IPrefPatterns | null = null;
+
+// Cache for compiled regex to avoid recompilation
+let cachedSplitRegex: RegExp | null = null;
+let cachedSplitPattern: string | null = null;
+
+const getSplitRegex = (pattern?: string): RegExp => {
+    const regexPattern = pattern || ',|;';
+    if (cachedSplitPattern === regexPattern && cachedSplitRegex) {
+        return cachedSplitRegex;
+    }
+    cachedSplitPattern = regexPattern;
+    cachedSplitRegex = new RegExp(regexPattern);
+    return cachedSplitRegex;
 };
 
 const loadPrefPatterns = () => {
@@ -110,13 +105,13 @@ const loadPrefPatterns = () => {
     try {
         const file = path.resolve(process.cwd(), 'config/preference-patterns.json');
         prefPatterns = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    } catch {
+    } catch (error) {
+        console.error('Error loading preference patterns configuration:', error);
         prefPatterns = {};
     }
     return prefPatterns;
 };
 
-// -------------------- Recipe context builder --------------------------------
 export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeContext => {
     const members = group.members || [];
     const memberContexts = members.map((m: any, idx: number) => {
@@ -130,73 +125,110 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         if (mc.ageGroup) ageGroupsCount[mc.ageGroup] = (ageGroupsCount[mc.ageGroup] || 0) + 1;
     }
 
-    interface Counters { [k: string]: number }
     const allergyMap: Record<string, Set<string>> = {};
     const hardRestrictionSet: Set<string> = new Set();
     const softRestrictionSet: Set<string> = new Set();
     const cuisinesLikedSet: Set<string> = new Set();
     const dislikesSet: Set<string> = new Set();
-
-    // Preference patterns
     const patterns = loadPrefPatterns() || {};
-    const normList = (arr?: string[]) => Array.isArray(arr) ? Array.from(new Set(arr.map(s => s.toLowerCase().trim()).filter(Boolean))).sort((a, b) => b.length - a.length) : [];
-    const dislikeIndicators = normList(patterns.dislikeIndicators);
-    const avoidIndicators = normList(patterns.avoidIndicators);
-    const excludeIndicators = normList(patterns.excludeIndicators);
-    const splitRegex = new RegExp(patterns.splitDelimitersRegex || ',|;');
-    const extractNegativeTokens = (text: string) => {
+    
+    // Simplify list normalization - extract to helper
+    const normalizeStringList = (arr?: string[]): string[] => {
+        if (!Array.isArray(arr)) return [];
+        return Array.from(new Set(
+            arr.map(s => s.toLowerCase().trim())
+               .filter(Boolean)
+        )).sort((a, b) => b.length - a.length);
+    };
+    
+    const dislikeIndicators = normalizeStringList(patterns.dislikeIndicators);
+    const avoidIndicators = normalizeStringList(patterns.avoidIndicators);
+    const excludeIndicators = normalizeStringList(patterns.excludeIndicators);
+    const splitRegex = getSplitRegex(patterns.splitDelimitersRegex);
+
+    const extractNegativeTokens = (text: string): string[] => {
         const raw = text.trim();
-        if (!raw) return [] as string[];
+        if (!raw) return [];
+        
         const lower = raw.toLowerCase();
-        const indicators = [...dislikeIndicators, ...avoidIndicators];
-        for (const ind of indicators) {
-            if (lower.startsWith(ind + ' ')) {
-                const rest = lower.slice(ind.length).trim();
-                return rest.split(splitRegex).map(t => t.trim()).filter(Boolean);
-            }
-        }
-        for (const ex of excludeIndicators) {
-            if (lower.startsWith(ex + ' ')) {
-                const rest = lower.slice(ex.length).trim();
+        const allIndicators = [...dislikeIndicators, ...avoidIndicators, ...excludeIndicators];
+        
+        for (const indicator of allIndicators) {
+            if (lower.startsWith(indicator + ' ')) {
+                const rest = lower.slice(indicator.length).trim();
                 return rest.split(splitRegex).map(t => t.trim()).filter(Boolean);
             }
         }
         return [];
     };
 
-    for (const m of members) {
-        const dp = m.dietaryProfile || {};
-        if (Array.isArray(m.cuisinePreferences)) {
-            for (const c of m.cuisinePreferences) if (typeof c === 'string' && c.trim()) cuisinesLikedSet.add(c.trim().toLowerCase());
-        }
-        if (Array.isArray(dp.preferences)) {
-            for (const p of dp.preferences) if (typeof p === 'string') extractNegativeTokens(p).forEach(t => dislikesSet.add(t));
-        }
-        if (Array.isArray(dp.allergies)) {
-            for (const a of dp.allergies) {
-                const name = typeof a === 'string' ? a : (a?.name ?? a?.substance);
-                if (!name) continue;
-                const key = normalizeAllergen(String(name));
-                if (!key) continue;
-                if (!allergyMap[key]) allergyMap[key] = new Set();
-                allergyMap[key].add(m.id);
+    // Helper functions for member processing
+    const processCuisinePreferences = (member: any, cuisinesLikedSet: Set<string>) => {
+        if (!Array.isArray(member.cuisinePreferences)) return;
+        for (const cuisine of member.cuisinePreferences) {
+            if (typeof cuisine === 'string' && cuisine.trim()) {
+                cuisinesLikedSet.add(cuisine.trim().toLowerCase());
             }
         }
-        if (Array.isArray(dp.restrictions)) {
-            for (const r of dp.restrictions) {
-                if (r == null) continue;
-                if (typeof r === 'string') {
-                    hardRestrictionSet.add(r);
-                } else {
-                    const type = r.type || r.category;
-                    const reason = r.reason || r.code || r.name;
-                    if (reason) {
-                        if (type === EDietaryRestrictionType.FORBIDDEN) hardRestrictionSet.add(reason);
-                        else if (type === EDietaryRestrictionType.REDUCED) softRestrictionSet.add(reason);
-                    }
-                }
+    };
+
+    const processPreferences = (member: any, dislikesSet: Set<string>) => {
+        const preferences = member.dietaryProfile?.preferences;
+        if (!Array.isArray(preferences)) return;
+        for (const preference of preferences) {
+            if (typeof preference === 'string') {
+                extractNegativeTokens(preference).forEach(token => dislikesSet.add(token));
             }
         }
+    };
+
+    const processAllergies = (member: any, allergyMap: Record<string, Set<string>>) => {
+        const allergies = member.dietaryProfile?.allergies;
+        if (!Array.isArray(allergies)) return;
+        
+        for (const allergy of allergies) {
+            const name = typeof allergy === 'string' ? allergy : (allergy?.name ?? allergy?.substance);
+            if (!name) continue;
+            
+            const key = normalizeAllergen(String(name));
+            if (!key) continue;
+            
+            if (!allergyMap[key]) allergyMap[key] = new Set();
+            allergyMap[key].add(member.id);
+        }
+    };
+
+    const processRestrictions = (member: any, hardRestrictionSet: Set<string>, softRestrictionSet: Set<string>) => {
+        const restrictions = member.dietaryProfile?.restrictions;
+        if (!Array.isArray(restrictions)) return;
+        
+        for (const restriction of restrictions) {
+            if (restriction == null) continue;
+            
+            if (typeof restriction === 'string') {
+                hardRestrictionSet.add(restriction);
+                continue;
+            }
+            
+            const type = restriction.type || restriction.category;
+            const reason = restriction.reason || restriction.code || restriction.name;
+            if (!reason) continue;
+            
+            const typeUpper = String(type).toUpperCase();
+            if (typeUpper === 'FORBIDDEN') {
+                hardRestrictionSet.add(reason);
+            } else if (typeUpper === 'REDUCED') {
+                softRestrictionSet.add(reason);
+            }
+        }
+    };
+
+    // Process all members
+    for (const member of members) {
+        processCuisinePreferences(member, cuisinesLikedSet);
+        processPreferences(member, dislikesSet);
+        processAllergies(member, allergyMap);
+        processRestrictions(member, hardRestrictionSet, softRestrictionSet);
     }
 
     const allergies: IAllergyAgg[] = Object.entries(allergyMap)
@@ -211,7 +243,11 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     });
 
     const cookingSkillSpread: Counters = {};
-    for (const m of members) if (m.cookingSkill) cookingSkillSpread[m.cookingSkill] = (cookingSkillSpread[m.cookingSkill] || 0) + 1;
+    members.forEach((member: any) => {
+        if (member.cookingSkill) {
+            cookingSkillSpread[member.cookingSkill] = (cookingSkillSpread[member.cookingSkill] || 0) + 1;
+        }
+    });
 
     const payload: IGroupRecipeContext = {
         type: 'group-recipe-context',

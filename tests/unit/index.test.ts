@@ -1,8 +1,6 @@
 process.env.NODE_ENV = 'test';
-import { jest } from '@jest/globals';
-export { };
 
-await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
+jest.mock('@axyor/family-serve-database', () => ({
   Database: class Database { },
   EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
   EGroupRole: { ADMIN: 'ADMIN', MEMBER: 'MEMBER' },
@@ -18,7 +16,7 @@ await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
   default: class Database { },
 }));
 
-const mod = await import('../../src/index');
+const mod = require('../../src/index');
 
 class MockDatabase {
   disconnect = jest.fn(async () => { });

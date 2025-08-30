@@ -1,9 +1,6 @@
 process.env.NODE_ENV = 'test';
-import { jest } from '@jest/globals';
-export { };
 
-// Mock DB package enums to satisfy imports
-await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
+jest.mock('@axyor/family-serve-database', () => ({
     Database: class Database { },
     EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
     EGroupRole: { ADMIN: 'ADMIN', MEMBER: 'MEMBER' },
@@ -19,15 +16,12 @@ await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
     default: class Database { },
 }));
 
-// Use explicit relative specifiers ending with .js (mapped by Jest to .ts)
-const { setDatabase } = await import('../../src/index.js');
-const { allGroupTools } = await import('../../src/tools/group.tools.js');
-
-// Build a lookup of tool handlers
-const toolMap: Record<string, any> = {};
+let toolMap: Record<string, any> = {};
+const { setDatabase: importedSetDatabase } = require('../../src/index');
+const { allGroupTools } = require('../../src/tools/group.tools');
 for (const t of allGroupTools()) toolMap[t.name] = t.handler;
 
-// Mock data
+
 const mkMember = (i: number, extras: any = {}) => ({
     id: `m-${i}`,
     role: 'MEMBER',
@@ -57,20 +51,20 @@ const groups = [
     { id: 'g3', name: 'Gamma', members: [] },
 ];
 
-class MockGroupService {
+class ITMockGroupService {
     listGroups = jest.fn(async () => groups);
     findByName = jest.fn(async (name: string) => groups.find(g => g.name === name) || null);
     getGroup = jest.fn(async (id: string) => groups.find(g => g.id === id) || null);
 }
-class MockDatabase {
-    svc = new MockGroupService();
+class ITMockDatabase {
+    svc = new ITMockGroupService();
     getGroupService() { return this.svc; }
     disconnect = jest.fn(async () => { });
 }
 
 describe('groups tools', () => {
     beforeAll(() => {
-        setDatabase(new MockDatabase() as any);
+        importedSetDatabase(new ITMockDatabase() as any);
     });
 
     test('groups-summary returns minimal data without members', async () => {
@@ -89,13 +83,13 @@ describe('groups tools', () => {
         expect(payload.members.length).toBe(2);
         expect(payload.members[0].alias).toBeDefined();
         expect(payload.hash).toMatch(/^sha256:/);
-        // Aggregation checks
+
         const peanutAllergy = payload.allergies.find((a: any) => a.substance === 'peanut');
         expect(peanutAllergy.count).toBe(2);
         expect(new Set(peanutAllergy.members)).toEqual(new Set(['m-1', 'm-2']));
         expect(payload.hardRestrictions).toEqual(expect.arrayContaining(['GLUTEN_FREE', 'NO_PORK']));
         expect(payload.softRestrictions).toEqual(expect.arrayContaining(['LOW_CARB']));
-        // Preferences
+
         expect(payload.softPreferences.cuisinesLiked).toEqual(expect.arrayContaining(['italian', 'japanese', 'thai']));
         expect(payload.softPreferences.dislikes).toEqual(expect.arrayContaining(['cilantro', 'okra']));
     });

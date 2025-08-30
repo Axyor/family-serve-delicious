@@ -1,5 +1,5 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getDatabase } from '../db.js';
+import { getDatabase } from '../db';
 
 export const groupResourceHandler = async (uri: URL, variables: Record<string, unknown>) => {
     const groupId = variables.groupId as string;

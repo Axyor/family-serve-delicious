@@ -1,2 +1,2 @@
-export * from './group.helpers.js';
-export * from './group.interfaces.js';
+export * from './group.helpers';
+export * from './group.interfaces';

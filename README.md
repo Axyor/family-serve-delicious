@@ -2,18 +2,39 @@
 
 # 🥗🤖 Family Serve Delicious MCP Server
 
-**Model Context Protocol (MCP) server powering AI-driven, constraint‑aware meal planning for families & groups.**
+**Model Context Protocol (MCP) server powering AI‑driven, constraint‑aware meal planning for families & groups.**
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
-[![MCP](https://img.shields.io/badge/protocol-MCP-blue.svg)](#)
+[![MCP](https://img.shields.io/badge/protocol-MCP-blue.svg)](https://modelcontextprotocol.io/docs/getting-started/intro)
+[![context prompt-optimized](https://img.shields.io/badge/context-prompt--optimized-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 </div>
 
-`family-serve-delicious` provides a specialized bridge between an LLM and structured nutritional / preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
+`family-serve-delicious` bridges an LLM with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
 
 > Data layer: [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) (services, validation, domain entities).
 
+---
+
+## 📑 Table of Contents
+
+1. [Core Capabilities](#core-capabilities)
+2. [MCP Architecture](#mcp-architecture)
+3. [Resources & Tools](#resources-and-tools)
+4. [LLM Integration Workflow](#llm-integration-workflow)
+5. [Privacy & Anonymization](#privacy-and-anonymization)
+6. [Quick Start](#quick-start)
+7. [Configuration](#configuration)
+	 - [Environment Variables](#environment-variables)
+	 - [Allergen Synonyms](#allergen-synonyms-configuration)
+	 - [Preference Patterns](#preference-pattern-configuration)
+8. [Module System & Database Package](#module-system-and-database-package)
+9. [Testing](#tests)
+10. [License](#license)
+
+---
+
+<a id="core-capabilities"></a>
 ## ✨ Core Capabilities
 
 - 🍽️ Multi‑profile contextual meal recommendations
@@ -23,18 +44,20 @@
 - 🛠️ Declarative MCP tools (function calling ready)
 - 🔍 Group name lookup (avoid loading everything)
 
+<a id="mcp-architecture"></a>
 ## 🧩 MCP Architecture
 
 1. Structured source (MongoDB via the database package)
 2. MCP Resource `group`: serializes a specific group
 3. Exposed read‑only tools:
-	- `find-group-by-name` (fast ID resolution)
-	- `groups-summary` (paginated lightweight list, no members)
-	- `group-recipe-context` (aggregated anonymized context for recipe generation)
-	- `find-members-by-restriction` (targeted filtering)
+	 - `find-group-by-name` (fast ID resolution)
+	 - `groups-summary` (paginated lightweight list, no members)
+	 - `group-recipe-context` (aggregated anonymized context for recipe generation)
+	 - `find-members-by-restriction` (targeted filtering)
 4. System prompt (not included here) guides: role, safety, tool usage
 5. LLM answers = combination of injected context + tool results
 
+<a id="resources-and-tools"></a>
 ## 🗂️ Resources & Tools
 
 | Type | Name | Description | Load | Recommended Use |
@@ -45,55 +68,22 @@
 | Tool | `group-recipe-context` | Aggregated anonymized recipe context | Low→Medium | Direct prompt injection |
 | Tool | `find-members-by-restriction` | Filtered subset of one group | Low → Medium | Constraint-focused reasoning |
 
-Suggested LLM strategy:
+<a id="llm-integration-workflow"></a>
+## 🔌 LLM Integration Workflow
+
+Suggested strategy:
 1. Resolve group (via `find-group-by-name` or browse `groups-summary`).
 2. Fetch `group-recipe-context` for anonymized aggregated constraints.
 3. (Optional) Use `find-members-by-restriction` for focused constraint clarification.
 
 This minimizes token usage and keeps reasoning focused.
 
-## 🚀 Quick Start
-
-```bash
-git clone https://github.com/Axyor/family-serve-delicious
-cd family-serve-delicious
-npm install
-cp .env.example .env   # ajouter MONGODB_URI
-npm run build
-npm start
-```
-
-Required env vars:
-
-| Name | Description |
-|------|-------------|
-| `MONGODB_URI` | MongoDB connection string |
-
-Dev watch mode: `npm run dev` (incremental TypeScript build).
-
-## 🧪 Tests
-
-```bash
-npm test          # jest (unit + integration)
-```
-
-Tests mock the DB package to avoid a real Mongo instance (unless you add e2e suites).
-
-## 🔌 LLM Integration (MCP)
-
-The server starts an MCP stdio transport. A client (editor / orchestrator / agent) can:
-
-1. List resources & tools
-2. Resolve a groupId via `find-group-by-name`
-3. Load resource `group://{groupId}` if you need raw structure, otherwise jump to `group-recipe-context`
-4. Call filtering tools for targeted analysis
-
 Returned formats:
-- Every tool now wraps data with `type` and `schemaVersion` fields (e.g. `{ "type": "groups-summary", "schemaVersion": 1, ... }`).
+- Every tool wraps data with `type` and `schemaVersion` fields (e.g. `{ "type": "groups-summary", "schemaVersion": 1, ... }`).
 - Empty / null fields pruned server-side to reduce tokens.
-- Pagination: `limit` (<=100) & `offset` for `groups-summary`.
+- Pagination: `limit` (≤100) & `offset` for `groups-summary`.
 
-Example minimal `groups-summary` response (pretty-printed for docs):
+Example minimal `groups-summary` response:
 ```json
 {
 	"type": "groups-summary",
@@ -125,9 +115,62 @@ Example `group-recipe-context` response (simplified):
 }
 ```
 
-## 🧾 Allergen Synonyms Configuration
+<a id="privacy-and-anonymization"></a>
+## 🔒 Privacy & Anonymization
 
-To enable multilingual allergy aggregation without hard‑coding logic, the server loads a JSON mapping: `config/allergen-synonyms.json`.
+`group-recipe-context` is designed to minimize personal data while preserving 100% of the nutritional / constraint signal required for high‑quality meal planning.
+
+Principles:
+
+- Data minimization: no full names or extraneous attributes needed for reasoning about nutrition, restrictions, allergies, variety.
+- Light pseudonymization: optional `alias` (e.g. `M1`, `M2`). The client may generate or omit it; the tool never emits sensitive name fields.
+- Aggregation first: segmentation (`segments.ageGroups`), per‑substance allergy counts, sorted restriction lists—patterns over identities.
+- Layer separation:
+	- Resource `group` = full raw structure (only fetch when explicitly necessary, e.g. for personalized messaging).
+	- Tool `group-recipe-context` = compact anonymized view for the common reasoning loop (prompt injection, constraint synthesis, filtering).
+- Content hash: `hash` (prefix `sha256:` + 16 hex chars) computed on the anonymized payload → enables client caching, change detection, prompt deduplication, lightweight provenance.
+- Harder trivial re‑identification: no per‑member explicit allergy / restriction expansions; only reduced member list (id / alias / ageGroup / skill if present) + aggregates.
+
+Recommended agent / orchestrator flow:
+1. Resolve target group (`find-group-by-name` or browse `groups-summary`).
+2. Fetch `group-recipe-context`; compare `hash` with cached value.
+3. If unchanged → skip re‑injection (token savings). If changed → update internal prompt context / memory.
+4. Fetch full `group` resource only when truly needing personal display fields.
+
+Summary: anonymization preserves all constraint & planning utility while intentionally reducing unnecessary personalization.
+
+<a id="quick-start"></a>
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/Axyor/family-serve-delicious
+cd family-serve-delicious
+nvm use || echo "(Optional) Use Node 22 LTS: nvm install 22"
+npm install
+cp .env.example .env   # add MONGODB_URI
+npm run build
+npm start
+```
+
+### Environment Variables
+
+| Name | Description |
+|------|-------------|
+| `MONGODB_URI` | MongoDB connection string |
+
+Runtime:
+- Node.js 22.x (LTS) – see `.nvmrc`.
+- TypeScript target: ES2023.
+
+Dev watch mode: `npm run dev` (incremental build).
+
+<a id="configuration"></a>
+## ⚙️ Configuration
+
+<a id="allergen-synonyms-configuration"></a>
+### Allergen Synonyms Configuration
+
+The server loads a JSON mapping: `config/allergen-synonyms.json` to enable multilingual allergy aggregation.
 
 Format:
 ```json
@@ -154,14 +197,15 @@ Best practices:
 - Avoid exact duplicates.
 
 Current limitations:
-- No severity weighting (future shape could be: { "peanut": { "synonyms": [...], "severity": "high" }} ).
+- No severity weighting (future shape could be: `{ "peanut": { "synonyms": [...], "severity": "high" }}` ).
 - No region scoping.
 
 Failure fallback: if the file can’t be read, aggregation degrades to plain lowercase grouping (no synonym fusion).
 
-## 🧪 Preference Pattern Configuration
+<a id="preference-pattern-configuration"></a>
+### Preference Pattern Configuration
 
-Negative / exclusion culinary preferences are parsed using a multilingual pattern file: `config/preference-patterns.json`.
+Negative / exclusion culinary preferences use `config/preference-patterns.json`.
 
 Structure:
 ```jsonc
@@ -174,15 +218,15 @@ Structure:
 ```
 
 How it works:
-- Each preference string from a member’s dietaryProfile.preferences is lower‑cased.
-- The code checks whether it starts with any indicator (longest indicators matched first).
-- The remainder of the string is split by `splitDelimitersRegex` into individual tokens.
-- Tokens are trimmed and stored as dislikes (soft negative signals).
+- Preference string lower‑cased.
+- Detect leading indicator (longest first).
+- Remainder split by `splitDelimitersRegex`.
+- Tokens trimmed → stored as dislikes (soft signals).
 
 Why external config:
 - Expand to new languages without code changes.
-- Adjust token splitting for edge cases (e.g. add locale conjunctions).
-- Allow experimentation with detection scope.
+- Adjust token splitting for edge cases.
+- Enable experimentation with detection scope.
 
 Updating:
 1. Edit the JSON file.
@@ -190,28 +234,43 @@ Updating:
 
 Best practices:
 - Keep indicators singular (avoid duplicates like "avoid" and "avoid ").
-- Add longer, more specific phrases first (sorting by length is automatic to prefer longest match).
-- Include common conjunctions in `splitDelimitersRegex` for the languages you support.
+- Add longer, more specific phrases first (auto length sorting ensures precedence).
+- Include common conjunctions in `splitDelimitersRegex` for supported languages.
 
-Limitations / Future ideas:
-- No sentiment weighting; all extracted tokens treated equally.
-- No mapping to standardized dislike taxonomy (future: map to ingredient ontology).
-- Only prefix matching; phrases like "I really dislike cilantro" aren’t caught (could add regex mode later).
+<a id="module-system-and-database-package"></a>
+## 🧱 Module System & Database Package
 
-Fallback: if the file is missing or invalid, extraction silently degrades (only cuisinePreferences remain, dislikes may be empty).
+The server runs as CommonJS targeting Node 22 LTS while `@axyor/family-serve-database` ships as a dual package (conditional exports for both `require` and `import`).
 
+Implications:
+- Plain `import { Database } ...` in TypeScript compiles to `require`.
+- Tooling (Jest, ts-jest) works without experimental ESM flags.
+- ESM consumers still interoperate seamlessly.
 
+Upgrade checklist (if coming from older ESM‑only DB version):
+1. Upgrade `@axyor/family-serve-database` to >= 2.1.0 (dual exports).
+2. Remove any `await import('@axyor/family-serve-database')` loader code.
+3. Ensure test script no longer uses `--experimental-vm-modules`.
+4. Rebuild & run tests (should pass unchanged).
+5. (Optional) Pin Node 22 in CI using `.nvmrc` or `setup-node` `node-version: '22'`.
 
-## 🤝 Contributing
+Node 22 specifics:
+- Native ES2023 features (e.g. `Array.prototype.findLast`).
+- Faster startup; no experimental module flags.
+- Cleaner TypeScript output targeting ES2023.
 
-PRs welcome. Style: strict TypeScript, clear naming, add/update tests before sensitive refactors.
+<a id="tests"></a>
+## 🧪 Tests
 
+```bash
+npm test  # jest (unit + integration)
+```
+
+Tests mock the DB package to avoid a real Mongo instance (unless you add e2e suites).
+
+<a id="license"></a>
 ## 📜 License
 
 Distributed under **AGPL-3.0-or-later**. See `LICENSE`.
 
 Private server use allowed; modified network service redistribution must publish corresponding source (network copyleft).
-
----
-
-Let me know if you’d like a system prompt draft or mutation tools scaffold.

@@ -1,5 +1,3 @@
-// Shared interfaces for group tools & helpers
-
 export interface IAllergyAgg { substance: string; members: string[]; count: number; }
 export interface IPrefPatterns {
     dislikeIndicators?: string[];
@@ -28,5 +26,6 @@ export interface IGroupRecipeContext {
     hash: string;
 }
 
-// Ensure this file is treated as a module for NodeNext resolution
+export interface Counters { [k: string]: number }
+
 export { };
