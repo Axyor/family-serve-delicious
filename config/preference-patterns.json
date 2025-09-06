@@ -1,0 +1,30 @@
+{
+    "_comment": "Multilingual patterns for detecting negative or exclusion preferences. Ordered automatically by length when compiled.",
+    "dislikeIndicators": [
+        "déteste",
+        "deteste",
+        "dislike",
+        "dislikes",
+        "hate",
+        "odio",
+        "detesto"
+    ],
+    "avoidIndicators": [
+        "éviter",
+        "eviter",
+        "avoid",
+        "evita",
+        "vermeide",
+        "vermeiden"
+    ],
+    "excludeIndicators": [
+        "sans",
+        "pas d'",
+        "pas de",
+        "sin",
+        "ohne",
+        "without",
+        "no"
+    ],
+    "splitDelimitersRegex": ",|;|\/|\\| et | and | y | ou "
+}
