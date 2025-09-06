@@ -6,3 +6,6 @@
 
 # Build output folder
 /dist
+
+# GitHub chatmodes (local development only)
+/.github/chatmodes/

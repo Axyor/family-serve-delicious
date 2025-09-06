@@ -2,21 +2,29 @@
   "name": "family-serve-delicious",
   "version": "1.0.0",
   "description": "A server to manage dietary profiles (preferences, needs, allergies) for a family or group.",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc -w",
+    "test": "node --no-warnings node_modules/jest/bin/jest.js --config jest.config.js"
   },
-  "type": "module",
   "keywords": [],
   "author": "Axyor",
   "license": "ISC",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "devDependencies": {
-    "ts-jest": "^29.1.2",
     "@types/jest": "^29.5.12",
+    "@types/node": "^24.1.0",
     "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0"
+    "@axyor/family-serve-database": "^2.1.0",
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "dotenv": "^17.2.1"
   }
 }
