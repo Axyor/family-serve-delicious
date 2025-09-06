@@ -1,10 +1,6 @@
-// Ensure we don't auto-start the server in tests
 process.env.NODE_ENV = 'test';
-import { jest } from '@jest/globals';
-export { };
 
-// ESM mocking of the DB package to avoid pulling mongoose
-await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
+jest.mock('@axyor/family-serve-database', () => ({
   Database: class Database { },
   EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
   EGroupRole: { ADMIN: 'ADMIN', MEMBER: 'MEMBER' },
@@ -20,7 +16,7 @@ await jest.unstable_mockModule('@axyor/family-serve-database', () => ({
   default: class Database { },
 }));
 
-const { groupResourceHandler, setDatabase } = await import('../../src/index');
+const { groupResourceHandler, setDatabase } = require('../../src/index');
 
 type Mock = jest.MockedFunction<any> & ((...args: any[]) => any);
 
@@ -28,14 +24,14 @@ class MockGroupService {
   getGroup: Mock = jest.fn(async (id: string) => id === 'group-1' ? ({ id: 'group-1', name: 'Fam', members: [], updatedAt: new Date(), createdAt: new Date() }) : null);
 }
 
-class MockDatabase {
+class LocalMockDatabase {
   private svc = new MockGroupService();
   getGroupService() { return this.svc; }
   disconnect = jest.fn(async () => { });
 }
 
 describe('Read-only: group resource', () => {
-  const mockDb = new MockDatabase() as any;
+  const mockDb = new LocalMockDatabase() as any;
   beforeAll(() => {
     setDatabase(mockDb);
   });

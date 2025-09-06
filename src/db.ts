@@ -1,6 +1,6 @@
 import { Database } from '@axyor/family-serve-database';
 
-let db: Database;
+let db: Database | undefined;
 
 export const initializeDatabase = async (mongoUri: string) => {
     db = await Database.initialize(mongoUri);
@@ -8,7 +8,7 @@ export const initializeDatabase = async (mongoUri: string) => {
 };
 
 export const setDatabase = (database: Database) => { db = database; };
-export const getDatabase = () => {
+export const getDatabase = (): Database => {
     if (!db) throw new Error('Database not initialized');
     return db;
 };

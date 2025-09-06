@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
-        "target": "es2022",
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
+        "target": "es2023",
+        "module": "Node16",
+        "moduleResolution": "node16",
         "lib": [
-            "es2020"
+            "es2023"
         ],
         "outDir": "./dist",
         "rootDir": "./src",

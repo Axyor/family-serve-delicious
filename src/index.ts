@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { config } from 'dotenv';
-import { initializeDatabase, disconnectDatabase, setDatabase, getDatabase } from './db.js';
-import { groupResource, groupResourceHandler } from './resources/group.resource.js';
-import { allGroupTools } from './tools/group.tools.js';
+import { initializeDatabase, disconnectDatabase, setDatabase } from './db';
+import { groupResource, groupResourceHandler } from './resources/group.resource';
+import { allGroupTools } from './tools/group.tools';
 
 config();
 
