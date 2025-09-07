@@ -27,7 +27,6 @@ export const ageGroup = (age?: number) => {
     if (age < 60) return 'adult';
     return 'senior';
 };
-
 class AllergenSynonymIndex {
     private built: boolean = false;
     private map: Record<string, string> = {};
@@ -85,8 +84,6 @@ const normalizeAllergen = (raw: string): string => {
 };
 
 let prefPatterns: IPrefPatterns | null = null;
-
-// Cache for compiled regex to avoid recompilation
 let cachedSplitRegex: RegExp | null = null;
 let cachedSplitPattern: string | null = null;
 
@@ -132,7 +129,6 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const dislikesSet: Set<string> = new Set();
     const patterns = loadPrefPatterns() || {};
     
-    // Simplify list normalization - extract to helper
     const normalizeStringList = (arr?: string[]): string[] => {
         if (!Array.isArray(arr)) return [];
         return Array.from(new Set(
@@ -162,7 +158,6 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         return [];
     };
 
-    // Helper functions for member processing
     const processCuisinePreferences = (member: any, cuisinesLikedSet: Set<string>) => {
         if (!Array.isArray(member.cuisinePreferences)) return;
         for (const cuisine of member.cuisinePreferences) {
@@ -223,7 +218,6 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         }
     };
 
-    // Process all members
     for (const member of members) {
         processCuisinePreferences(member, cuisinesLikedSet);
         processPreferences(member, dislikesSet);
