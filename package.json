@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@axyor/family-serve-database": "^2.1.0",
-    "@modelcontextprotocol/sdk": "^1.17.4",
+    "@modelcontextprotocol/sdk": "^1.17.5",
     "dotenv": "^17.2.1"
   }
 }

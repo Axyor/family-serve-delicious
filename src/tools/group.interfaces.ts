@@ -27,5 +27,3 @@ export interface IGroupRecipeContext {
 }
 
 export interface Counters { [k: string]: number }
-
-export { };
