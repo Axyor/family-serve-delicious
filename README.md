@@ -12,7 +12,7 @@
 
 `family-serve-delicious` bridges an LLM with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
 
-> Data layer: [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) (services, validation, domain entities).
+> Data layer: [`@axyor/family-serve-database`](https://github.com/username/family-serve-database) (services, validation, domain entities).
 
 ---
 
@@ -24,13 +24,17 @@
 4. [LLM Integration Workflow](#llm-integration-workflow)
 5. [Privacy & Anonymization](#privacy-and-anonymization)
 6. [Quick Start](#quick-start)
-7. [Configuration](#configuration)
-	 - [Environment Variables](#environment-variables)
-	 - [Allergen Synonyms](#allergen-synonyms-configuration)
-	 - [Preference Patterns](#preference-pattern-configuration)
-8. [Module System & Database Package](#module-system-and-database-package)
-9. [Testing](#tests)
-10. [License](#license)
+7. [Development Scripts](#development-scripts)
+8. [AI Client Integration](#ai-client-integration)
+9. [Configuration](#configuration)
+   - [Environment Variables](#environment-variables)
+   - [GitHub Token Setup](#github-token-setup)
+   - [Allergen Synonyms](#allergen-synonyms-configuration)
+   - [Preference Patterns](#preference-pattern-configuration)
+10. [Docker Architecture](#docker-architecture)
+11. [Module System & Database Package](#module-system-and-database-package)
+12. [Testing](#tests)
+13. [License](#license)
 
 ---
 
@@ -43,6 +47,8 @@
 - 🧠 Lightweight RAG: targeted group context injection into the LLM
 - 🛠️ Declarative MCP tools (function calling ready)
 - 🔍 Group name lookup (avoid loading everything)
+- 🐳 Full Docker containerization with MongoDB
+- 🤖 Native Claude Desktop and LM Studio integration
 
 <a id="mcp-architecture"></a>
 ## 🧩 MCP Architecture
@@ -50,10 +56,10 @@
 1. Structured source (MongoDB via the database package)
 2. MCP Resource `group`: serializes a specific group
 3. Exposed read‑only tools:
-	 - `find-group-by-name` (fast ID resolution)
-	 - `groups-summary` (paginated lightweight list, no members)
-	 - `group-recipe-context` (aggregated anonymized context for recipe generation)
-	 - `find-members-by-restriction` (targeted filtering)
+   - `find-group-by-name` (fast ID resolution)
+   - `groups-summary` (paginated lightweight list, no members)
+   - `group-recipe-context` (aggregated anonymized context for recipe generation)
+   - `find-members-by-restriction` (targeted filtering)
 4. System prompt (not included here) guides: role, safety, tool usage
 5. LLM answers = combination of injected context + tool results
 
@@ -126,8 +132,8 @@ Principles:
 - Light pseudonymization: optional `alias` (e.g. `M1`, `M2`). The client may generate or omit it; the tool never emits sensitive name fields.
 - Aggregation first: segmentation (`segments.ageGroups`), per‑substance allergy counts, sorted restriction lists—patterns over identities.
 - Layer separation:
-	- Resource `group` = full raw structure (only fetch when explicitly necessary, e.g. for personalized messaging).
-	- Tool `group-recipe-context` = compact anonymized view for the common reasoning loop (prompt injection, constraint synthesis, filtering).
+  - Resource `group` = full raw structure (only fetch when explicitly necessary, e.g. for personalized messaging).
+  - Tool `group-recipe-context` = compact anonymized view for the common reasoning loop (prompt injection, constraint synthesis, filtering).
 - Content hash: `hash` (prefix `sha256:` + 16 hex chars) computed on the anonymized payload → enables client caching, change detection, prompt deduplication, lightweight provenance.
 - Harder trivial re‑identification: no per‑member explicit allergy / restriction expansions; only reduced member list (id / alias / ageGroup / skill if present) + aggregates.
 
@@ -142,30 +148,154 @@ Summary: anonymization preserves all constraint & planning utility while intenti
 <a id="quick-start"></a>
 ## 🚀 Quick Start
 
+### 🔑 GitHub Token Configuration (Required)
+
+This project uses a private npm package `@username/family-serve-database`. Configure your GitHub Personal Access Token first:
+
 ```bash
-git clone https://github.com/Axyor/family-serve-delicious
-cd family-serve-delicious
-nvm use || echo "(Optional) Use Node 22 LTS: nvm install 22"
-npm install
-cp .env.example .env   # add MONGODB_URI
-npm run build
-npm start
+./manage.sh setup
 ```
 
+### ⚡ Instant Development
+
+```bash
+git clone <repository-url>
+cd your-project-name
+nvm use || echo "(Optional) Use Node 22 LTS: nvm install 22"
+npm install
+./manage.sh setup  # Configure GitHub token + build
+npm run dev        # Start development environment
+```
+
+This starts everything you need:
+- MongoDB database
+- Mongo Express GUI (http://localhost:8081)
+- Family Serve MCP Server in development mode
+
+<a id="development-scripts"></a>
+## 🛠️ Development Scripts
+
+The project follows standard Node.js conventions for everyday operations:
+
+### 🚀 Development Scripts
+```bash
+npm run dev              # Start development environment (Docker)
+npm run build            # Build TypeScript application
+npm run test             # Run all tests
+npm run start            # Start built application locally
+```
+
+### 🐳 Docker Operations
+```bash
+npm run prod             # Start production environment
+npm run stop             # Stop all Docker services
+npm run status           # Show container status
+npm run logs             # Show all container logs
+npm run logs:app         # Show application logs only
+npm run clean            # Clean all containers and volumes
+```
+
+### 🗄️ Database Operations
+```bash
+npm run db:start         # Start MongoDB only
+npm run db:stop          # Stop MongoDB only
+npm run db:gui           # Start MongoDB web interface
+```
+
+### ⚙️ Configuration
+```bash
+npm run lm-studio        # Generate LM Studio config
+```
+
+### 🛠️ Essential Management
+
+For complex operations, use the simplified `manage.sh`:
+
+```bash
+./manage.sh setup          # Complete project initialization
+./manage.sh lmstudio config # Generate LM Studio configuration
+./manage.sh lmstudio help   # Open LM Studio setup guide
+./manage.sh claude config   # Generate Claude Desktop configuration
+./manage.sh claude help     # Show Claude Desktop setup guide
+./manage.sh reset           # Complete system reset (destructive)
+```
+
+<a id="ai-client-integration"></a>
+## 🤖 AI Client Integration
+
+### Claude Desktop Integration
+
+For Claude Desktop users, the server provides native MCP integration:
+
+1. **Generate Configuration**
+   ```bash
+   ./manage.sh claude config
+   ```
+
+2. **Start MongoDB (Required)**
+   ```bash
+   npm run db:start
+   ```
+
+3. **Configure Claude Desktop**
+   - Copy the generated configuration from `config/claude_desktop_mcp_config.json`
+   - Add it to your Claude Desktop configuration file
+   - Restart Claude Desktop to load the server
+
+For detailed setup instructions and troubleshooting:
+```bash
+./manage.sh claude help
+```
+
+### LM Studio Integration
+
+For LM Studio users, the server supports native MCP protocol:
+
+1. **Generate Configuration**
+   ```bash
+   ./manage.sh lmstudio config
+   ```
+
+2. **Start MongoDB (Required)**
+   ```bash
+   npm run db:start
+   ```
+
+3. **Add Server to LM Studio**
+   - Open LM Studio → My Projects
+   - Add the generated configuration from `config/lm_studio_mcp_config.json`
+   - The server will be available for chat interactions
+
+For detailed setup instructions:
+```bash
+./manage.sh lmstudio help
+```
+
+<a id="configuration"></a>
+## ⚙️ Configuration
+
+<a id="environment-variables"></a>
 ### Environment Variables
 
 | Name | Description |
 |------|-------------|
 | `MONGODB_URI` | MongoDB connection string |
+| `NODE_ENV` | Environment (development/production) |
 
-Runtime:
-- Node.js 22.x (LTS) – see `.nvmrc`.
-- TypeScript target: ES2023.
+<a id="github-token-setup"></a>
+### GitHub Token Setup
 
-Dev watch mode: `npm run dev` (incremental build).
+For private package access, configure your GitHub Personal Access Token:
 
-<a id="configuration"></a>
-## ⚙️ Configuration
+1. **Generate Token**
+   - Go to GitHub → Settings → Developer settings → Personal access tokens
+   - Generate new token with `packages:read` scope
+
+2. **Configure npm**
+   ```bash
+   ./manage.sh setup
+   ```
+   This will prompt for your GitHub username and token.
 
 <a id="allergen-synonyms-configuration"></a>
 ### Allergen Synonyms Configuration
@@ -200,7 +330,7 @@ Current limitations:
 - No severity weighting (future shape could be: `{ "peanut": { "synonyms": [...], "severity": "high" }}` ).
 - No region scoping.
 
-Failure fallback: if the file can’t be read, aggregation degrades to plain lowercase grouping (no synonym fusion).
+Failure fallback: if the file can't be read, aggregation degrades to plain lowercase grouping (no synonym fusion).
 
 <a id="preference-pattern-configuration"></a>
 ### Preference Pattern Configuration
@@ -237,10 +367,54 @@ Best practices:
 - Add longer, more specific phrases first (auto length sorting ensures precedence).
 - Include common conjunctions in `splitDelimitersRegex` for supported languages.
 
+<a id="docker-architecture"></a>
+## 🐳 Docker Architecture
+
+The project uses **two docker-compose configurations**:
+
+### Production (`docker-compose.yml`)
+- **MongoDB**: Database server with persistent storage
+- **Mongo Express**: Web-based MongoDB GUI  
+- **Family Serve App**: Containerized MCP server (built from Dockerfile)
+
+### Development (`docker-compose.dev.yml`)
+- **MongoDB**: Database server with separate dev volumes
+- **Mongo Express**: Web-based MongoDB GUI
+- **Family Serve App**: Development container with hot-reload (built from Dockerfile.dev)
+
+### Direct Docker Compose Usage
+
+```bash
+# Production
+docker-compose up -d
+docker-compose ps
+docker-compose logs -f
+docker-compose down
+
+# Development
+docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml logs -f family-serve-app
+docker-compose -f docker-compose.dev.yml down
+```
+
+**Recommended**: Use npm scripts instead for consistency:
+```bash
+npm run prod     # Production environment
+npm run dev      # Development environment  
+npm run stop     # Stop all services
+npm run status   # View service status
+```
+
+**Runtime:**
+- Node.js 22.x (LTS) – see `.nvmrc`.
+- TypeScript target: ES2023.
+
+**Dev watch mode**: `npm run dev` (incremental build with Docker hot-reload).
+
 <a id="module-system-and-database-package"></a>
 ## 🧱 Module System & Database Package
 
-The server runs as CommonJS targeting Node 22 LTS while `@axyor/family-serve-database` ships as a dual package (conditional exports for both `require` and `import`).
+The server runs as CommonJS targeting Node 22 LTS while `@username/family-serve-database` ships as a dual package (conditional exports for both `require` and `import`).
 
 Implications:
 - Plain `import { Database } ...` in TypeScript compiles to `require`.
@@ -248,8 +422,8 @@ Implications:
 - ESM consumers still interoperate seamlessly.
 
 Upgrade checklist (if coming from older ESM‑only DB version):
-1. Upgrade `@axyor/family-serve-database` to >= 2.1.0 (dual exports).
-2. Remove any `await import('@axyor/family-serve-database')` loader code.
+1. Upgrade `@username/family-serve-database` to >= 2.1.0 (dual exports).
+2. Remove any `await import('@username/family-serve-database')` loader code.
 3. Ensure test script no longer uses `--experimental-vm-modules`.
 4. Rebuild & run tests (should pass unchanged).
 5. (Optional) Pin Node 22 in CI using `.nvmrc` or `setup-node` `node-version: '22'`.

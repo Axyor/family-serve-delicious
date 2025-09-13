@@ -4,8 +4,16 @@
 # Environment variables
 .env
 
+# GitHub npm authentication (contains sensitive tokens)
+.npmrc
+
 # Build output folder
 /dist
+
+# Configuration files with absolute paths (use ./manage.sh to generate)
+/config/*_mcp_config.json
+/config/claude_desktop_config.json
+/config/lm_studio_config.json
 
 # GitHub chatmodes (local development only)
 /.github/chatmodes/

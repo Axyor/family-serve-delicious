@@ -15,6 +15,6 @@ Tool flow:
 3. Only load groups://{groupId} for names / personal fields.
 4. find-members-by-restriction for focused queries.
 
-Output (default): Summary; Constraints Applied; Plan; Rationale; Adjustments.
+Output (default): Summary; Constraints Applied; Plan; Rationale; **"Do these suggestions work for you? Would you like an organized shopping list?"**; Adjustments; Shopping List (if confirmed).
 
 Reference context hash when reused.
