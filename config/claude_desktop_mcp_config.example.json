@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "your-project-name": {
+      "command": "node",
+      "args": ["/path/to/your/project/dist/index.js"],
+      "env": {
+        "MONGODB_URI": "mongodb://localhost:27017/family_serve",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
