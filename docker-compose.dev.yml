@@ -1,0 +1,66 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: family-serve-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: family_serve
+    volumes:
+      - mongodb_dev_data:/data/db
+    networks:
+      - family-serve-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: family-serve-mongo-express-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - family-serve-network
+
+  family-serve-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: family-serve-app-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/family_serve
+      NODE_ENV: development
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - family-serve-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+
+networks:
+  family-serve-network:
+    driver: bridge

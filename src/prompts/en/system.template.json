@@ -60,16 +60,28 @@
             "summary",
             "constraintsApplied",
             "plan",
-            "rationale",
+            "rationale", 
             "adjustments?",
+            "shoppingListProposal",
             "shoppingList?"
         ],
+        "interactiveWorkflow": "Always propose shopping list after presenting meal plan",
+        "shoppingListProposal": "Do these suggestions work for you? Would you like an organized shopping list?",
         "shoppingListCategories": [
             "Produce",
             "Proteins",
             "Pantry",
-            "Spices",
+            "Spices & Condiments",
+            "Dairy",
             "Other"
+        ],
+        "listOptimization": [
+            "Quantities based on group.size",
+            "Organization by store sections",
+            "Alternatives for restrictions",
+            "Specialty characteristics when relevant", 
+            "Practical notes (shelf life, storage)",
+            "Approximate cost estimation"
         ],
         "jsonKeys": [
             "constraints",
@@ -100,5 +112,5 @@
         "Safe substitutions",
         "Hash provenance"
     ],
-    "markdownTemplate": "**Summary:** <one line>\n\n**Constraints Applied:**\n- Allergies: <list>\n- Hard: <list>\n- Soft: <list>\n- Dislikes: <list>\n\n**Plan:**\nDay 1: ...\nDay 2: ...\n\n**Rationale:** <short>\n\n**Adjustments:** <optional>"
+    "markdownTemplate": "**Summary:** <one line>\n\n**Constraints Applied:**\n- Allergies: <list>\n- Hard: <list>\n- Soft: <list>\n- Dislikes: <list>\n\n**Plan:**\nDay 1: ...\nDay 2: ...\n\n**Rationale:** <short>\n\n**Do these suggestions work for you? Would you like an organized shopping list?**\n\n**Adjustments:** <optional>\n\n**Shopping List:** <if confirmed by user>"
 }
