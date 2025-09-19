@@ -1,0 +1,142 @@
+{
+  "id": "legendary-gourmets",
+  "name": "Famille Smith",
+  "members": [
+    {
+      "id": "hannibal-lecter",
+      "role": "ADMIN",
+      "firstName": "Henri",
+      "lastName": "Leclair",
+      "age": 52,
+      "gender": "MALE",
+      "weightKg": 85,
+      "heightCm": 183,
+      "activityLevel": "LIGHTLY_ACTIVE",
+      "healthGoals": ["MAINTENANCE"],
+      "cuisinePreferences": ["French", "Italian", "European"],
+      "cookingSkill": "ADVANCED",
+      "budgetLevel": "HIGH",
+      "mealFrequency": 3,
+      "fastingWindow": null,
+      "dietaryProfile": {
+        "preferences": [
+          "sophisticated cuisine",
+          "rare ingredients",
+          "fine dining",
+          "elegant presentation"
+        ],
+        "allergies": [],
+        "restrictions": [
+          {
+            "type": "FORBIDDEN",
+            "reason": "PROCESSED_FOOD"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pippin-took",
+      "role": "MEMBER", 
+      "firstName": "Pierre",
+      "lastName": "Tournesol",
+      "age": 16,
+      "gender": "MALE",
+      "weightKg": 45,
+      "heightCm": 140,
+      "activityLevel": "VERY_ACTIVE",
+      "healthGoals": ["MUSCLE_GAIN"],
+      "cuisinePreferences": ["British", "Comfort Food"],
+      "cookingSkill": "BEGINNER",
+      "budgetLevel": "MEDIUM",
+      "mealFrequency": 7,
+      "fastingWindow": null,
+      "dietaryProfile": {
+        "preferences": [
+          "bread and butter",
+          "bacon and eggs",
+          "fruit tarts",
+          "ale and beer",
+          "roasted meats",
+          "mushrooms",
+          "second breakfast"
+        ],
+        "allergies": [],
+        "restrictions": [
+          {
+            "type": "REDUCED",
+            "reason": "SMALL_PORTIONS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "willy-wonka",
+      "role": "MEMBER",
+      "firstName": "Guillaume", 
+      "lastName": "Chocolat",
+      "age": 45,
+      "gender": "MALE",
+      "weightKg": 70,
+      "heightCm": 175,
+      "activityLevel": "MODERATELY_ACTIVE",
+      "healthGoals": ["MAINTENANCE"],
+      "cuisinePreferences": ["Desserts", "Confectionery", "Creative"],
+      "cookingSkill": "ADVANCED",
+      "budgetLevel": "HIGH",
+      "mealFrequency": 4,
+      "fastingWindow": null,
+      "dietaryProfile": {
+        "preferences": [
+          "chocolate creations",
+          "exotic fruits",
+          "colorful confections",
+          "innovative sweets",
+          "candy experiments",
+          "sugar artistry"
+        ],
+        "allergies": [],
+        "restrictions": [
+          {
+            "type": "FORBIDDEN",
+            "reason": "ARTIFICIAL_FLAVORING"
+          }
+        ]
+      }
+    },
+    {
+      "id": "barbie-roberts",
+      "role": "MEMBER",
+      "firstName": "Rose",
+      "lastName": "Malibu", 
+      "age": 28,
+      "gender": "FEMALE",
+      "weightKg": 50,
+      "heightCm": 175,
+      "activityLevel": "VERY_ACTIVE",
+      "healthGoals": ["MAINTENANCE", "HEART_HEALTH"],
+      "cuisinePreferences": ["Californian", "Mediterranean", "Healthy"],
+      "cookingSkill": "INTERMEDIATE",
+      "budgetLevel": "HIGH",
+      "mealFrequency": 5,
+      "fastingWindow": null,
+      "dietaryProfile": {
+        "preferences": [
+          "colorful salads",
+          "pink smoothies", 
+          "Instagram-worthy meals",
+          "rainbow vegetables",
+          "pretty cupcakes",
+          "aesthetic presentation",
+          "fresh organic produce"
+        ],
+        "allergies": [],
+        "restrictions": [
+          {
+            "type": "REDUCED",
+            "reason": "LOW_CALORIE"
+          }
+        ]
+      }
+    }
+  ]
+}

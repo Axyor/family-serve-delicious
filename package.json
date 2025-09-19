@@ -13,12 +13,13 @@
     "db:start": "docker-compose up -d mongodb",
     "db:stop": "docker-compose stop mongodb",
     "db:gui": "docker-compose up -d mongodb mongo-express && echo '🎯 MongoDB GUI: http://localhost:8081 (admin/admin123)'",
-    "prod": "docker-compose up -d && echo '🎯 Production started at http://localhost:3000'",
+    "prod": "docker-compose up -d && echo '🎯 MCP Server started in production mode'",
     "status": "docker-compose ps",
     "logs": "docker-compose logs -f",
     "logs:app": "docker-compose logs -f family-serve-app",
     "clean": "docker-compose down -v && echo '🧹 All containers and volumes removed'",
-    "lm-studio": "./manage.sh lmstudio config"
+    "lm-studio": "./manage.sh lmstudio config",
+    "claude": "./manage.sh claude config"
   },
   "keywords": [
     "mcp",

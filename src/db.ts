@@ -3,7 +3,7 @@ import { Database } from '@axyor/family-serve-database';
 let db: Database | undefined;
 
 export const initializeDatabase = async (mongoUri: string) => {
-    console.log('� Initializing database connection...');
+    console.log('🔄 Initializing database connection...');
     db = await Database.initialize(mongoUri);
     console.log('✅ Database initialized successfully');
     return db;
