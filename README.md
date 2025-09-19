@@ -12,7 +12,7 @@
 
 `family-serve-delicious` bridges an LLM with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
 
-> Data layer: [`@axyor/family-serve-database`](https://github.com/username/family-serve-database) (services, validation, domain entities).
+> **Data layer:** [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) - Complete database abstraction with services, validation, and domain entities. Provides TypeScript interfaces, enums, and business logic for family dietary management.
 
 ---
 
@@ -31,7 +31,12 @@
    - [GitHub Token Setup](#github-token-setup)
    - [Allergen Synonyms](#allergen-synonyms-configuration)
    - [Preference Patterns](#preference-pattern-configuration)
-10. [Docker Architecture](#docker-architecture)
+   - [Example Family Data](#example-family-data)
+   - [Docker Architecture](#docker-architecture)
+10. [Self-Hosted Deployment](#self-hosted-deployment)
+    - [NAS/Homelab Setup](#nashomelab-setup)
+    - [LLM Compatibility & Token Optimization](#llm-compatibility--token-optimization)
+    - [Prompt Selection Strategy](#prompt-selection-strategy)
 11. [Module System & Database Package](#module-system-and-database-package)
 12. [Testing](#tests)
 13. [License](#license)
@@ -47,8 +52,6 @@
 - 🧠 Lightweight RAG: targeted group context injection into the LLM
 - 🛠️ Declarative MCP tools (function calling ready)
 - 🔍 Group name lookup (avoid loading everything)
-- 🐳 Full Docker containerization with MongoDB
-- 🤖 Native Claude Desktop and LM Studio integration
 
 <a id="mcp-architecture"></a>
 ## 🧩 MCP Architecture
@@ -124,33 +127,29 @@ Example `group-recipe-context` response (simplified):
 <a id="privacy-and-anonymization"></a>
 ## 🔒 Privacy & Anonymization
 
-`group-recipe-context` is designed to minimize personal data while preserving 100% of the nutritional / constraint signal required for high‑quality meal planning.
+The `group-recipe-context` tool implements **privacy-first design** while preserving 100% of nutritional constraints needed for meal planning.
 
-Principles:
+**Key Features:**
+- **Data minimization**: Only essential constraint data (allergies, restrictions, age groups)
+- **Pseudonymization**: Members identified as `M1`, `M2`, etc. instead of real names  
+- **Aggregation**: Focus on patterns, not individuals (allergy counts, age group distribution)
+- **Hash-based caching**: `sha256:` prefix enables efficient context reuse without re-injection
 
-- Data minimization: no full names or extraneous attributes needed for reasoning about nutrition, restrictions, allergies, variety.
-- Light pseudonymization: optional `alias` (e.g. `M1`, `M2`). The client may generate or omit it; the tool never emits sensitive name fields.
-- Aggregation first: segmentation (`segments.ageGroups`), per‑substance allergy counts, sorted restriction lists—patterns over identities.
-- Layer separation:
-  - Resource `group` = full raw structure (only fetch when explicitly necessary, e.g. for personalized messaging).
-  - Tool `group-recipe-context` = compact anonymized view for the common reasoning loop (prompt injection, constraint synthesis, filtering).
-- Content hash: `hash` (prefix `sha256:` + 16 hex chars) computed on the anonymized payload → enables client caching, change detection, prompt deduplication, lightweight provenance.
-- Harder trivial re‑identification: no per‑member explicit allergy / restriction expansions; only reduced member list (id / alias / ageGroup / skill if present) + aggregates.
+**Two-layer architecture:**
+- `groups://{id}` resource: Full personal data (use only for personalization)
+- `group-recipe-context` tool: Anonymized constraints (default for meal planning)
 
-Recommended agent / orchestrator flow:
-1. Resolve target group (`find-group-by-name` or browse `groups-summary`).
-2. Fetch `group-recipe-context`; compare `hash` with cached value.
-3. If unchanged → skip re‑injection (token savings). If changed → update internal prompt context / memory.
-4. Fetch full `group` resource only when truly needing personal display fields.
-
-Summary: anonymization preserves all constraint & planning utility while intentionally reducing unnecessary personalization.
+**Workflow:**
+1. Fetch `group-recipe-context` with generated `hash`
+2. Reuse context if `hash` unchanged (token savings)
+3. Only fetch full `group` resource when names needed
 
 <a id="quick-start"></a>
 ## 🚀 Quick Start
 
 ### 🔑 GitHub Token Configuration (Required)
 
-This project uses a private npm package `@username/family-serve-database`. Configure your GitHub Personal Access Token first:
+This project uses a private npm package `@axyor/family-serve-database`. Configure your GitHub Personal Access Token first:
 
 ```bash
 ./manage.sh setup
@@ -171,7 +170,6 @@ This starts everything you need:
 - MongoDB database
 - Mongo Express GUI (http://localhost:8081)
 - Family Serve MCP Server in development mode
-
 <a id="development-scripts"></a>
 ## 🛠️ Development Scripts
 
@@ -205,6 +203,7 @@ npm run db:gui           # Start MongoDB web interface
 ### ⚙️ Configuration
 ```bash
 npm run lm-studio        # Generate LM Studio config
+npm run claude           # Generate Claude Desktop config
 ```
 
 ### 🛠️ Essential Management
@@ -229,7 +228,7 @@ For Claude Desktop users, the server provides native MCP integration:
 
 1. **Generate Configuration**
    ```bash
-   ./manage.sh claude config
+   npm run claude
    ```
 
 2. **Start MongoDB (Required)**
@@ -253,7 +252,7 @@ For LM Studio users, the server supports native MCP protocol:
 
 1. **Generate Configuration**
    ```bash
-   ./manage.sh lmstudio config
+   npm run lm-studio
    ```
 
 2. **Start MongoDB (Required)**
@@ -300,75 +299,62 @@ For private package access, configure your GitHub Personal Access Token:
 <a id="allergen-synonyms-configuration"></a>
 ### Allergen Synonyms Configuration
 
-The server loads a JSON mapping: `config/allergen-synonyms.json` to enable multilingual allergy aggregation.
+The server uses `config/allergen-synonyms.json` for **multilingual allergen normalization**.
 
-Format:
+**Format:**
 ```json
 {
-	"peanut": ["peanut", "peanuts", "arachide", "arachides"],
-	"dairy": ["dairy", "milk", "lait"]
+  "peanut": ["peanut", "peanuts", "arachide", "cacahuete"],
+  "dairy": ["dairy", "milk", "lait"]
 }
 ```
-- Key = canonical form (appears in the payload).
-- Values = synonyms (case‑insensitive, whitespace normalized).
-- Any allergen not present falls back to its cleaned (lowercased) form.
 
-Loading:
-- Lazy loaded on the first `group-recipe-context` call.
-- Reverse index built (synonym → canonical) for O(1) lookup.
+**Implementation:**
+- **Lazy loading**: Built on first `group-recipe-context` call
+- **Reverse index**: O(1) lookup (synonym → canonical form)
+- **Fallback**: Missing allergens use lowercase form
+- **Case-insensitive**: All comparisons normalized
 
-Updating:
-1. Edit the JSON file.
-2. Restart the server (no dynamic reload yet).
-
-Best practices:
-- Include both local language and English variants.
-- Keep accents; they are lowercased but not stripped (adjust later if needed).
-- Avoid exact duplicates.
-
-Current limitations:
-- No severity weighting (future shape could be: `{ "peanut": { "synonyms": [...], "severity": "high" }}` ).
-- No region scoping.
-
-Failure fallback: if the file can't be read, aggregation degrades to plain lowercase grouping (no synonym fusion).
+**Usage:** Restart server after editing (no dynamic reload).
 
 <a id="preference-pattern-configuration"></a>
 ### Preference Pattern Configuration
 
-Negative / exclusion culinary preferences use `config/preference-patterns.json`.
+The server uses `config/preference-patterns.json` for **multilingual negative preference detection**.
 
-Structure:
-```jsonc
+**Format:**
+```json
 {
-	"dislikeIndicators": ["dislike", "déteste", "odio"],
-	"avoidIndicators": ["avoid", "éviter", "vermeide"],
-	"excludeIndicators": ["no", "sans", "without", "sin"],
-	"splitDelimitersRegex": ",|;|/|\\\\| et | and | y | ou "
+  "dislikeIndicators": ["déteste", "dislike", "hate"],
+  "avoidIndicators": ["éviter", "avoid", "vermeide"],
+  "excludeIndicators": ["sans", "without", "sin", "no"],
+  "splitDelimitersRegex": ",|;|/| et | and | y | ou "
 }
 ```
 
-How it works:
-- Preference string lower‑cased.
-- Detect leading indicator (longest first).
-- Remainder split by `splitDelimitersRegex`.
-- Tokens trimmed → stored as dislikes (soft signals).
+**Processing logic:**
+1. **Detect indicators**: Longest-first matching (case-insensitive)
+2. **Extract tokens**: Split remaining text by regex delimiters
+3. **Store as dislikes**: Added to soft preference constraints
 
-Why external config:
-- Expand to new languages without code changes.
-- Adjust token splitting for edge cases.
-- Enable experimentation with detection scope.
+**Usage:** Restart server after editing (no dynamic reload).
 
-Updating:
-1. Edit the JSON file.
-2. Restart the server (no hot reload yet).
+<a id="exemple-family-data"></a>
+### Example Family Data
 
-Best practices:
-- Keep indicators singular (avoid duplicates like "avoid" and "avoid ").
-- Add longer, more specific phrases first (auto length sorting ensures precedence).
-- Include common conjunctions in `splitDelimitersRegex` for supported languages.
+The project includes a complete example family in `config/family-example-template.json` to help you understand the data structure and test the system:
+
+**Usage:**
+```bash
+# Load the example data into your database
+# (Implementation depends on your database setup scripts)
+# The file serves as a perfect template for creating your own families
+```
+
+**Customization:** Use this template as a starting point to create your own family profiles with appropriate dietary restrictions, preferences, and cooking skills.
 
 <a id="docker-architecture"></a>
-## 🐳 Docker Architecture
+### Docker Architecture
 
 The project uses **two docker-compose configurations**:
 
@@ -411,27 +397,144 @@ npm run status   # View service status
 
 **Dev watch mode**: `npm run dev` (incremental build with Docker hot-reload).
 
+<a id="self-hosted-deployment"></a>
+## 🏠 Self-Hosted Deployment
+
+<a id="nashomelab-setup"></a>
+### 🔧 NAS/Homelab Setup
+
+The Family Serve Delicious MCP server is perfectly suited for self-hosted environments like NAS devices (Synology, QNAP) or homelab setups with local LLMs.
+
+#### **Architecture Overview**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Your NAS/Homelab                         │
+├─────────────────────────────────────────────────────────────┤
+│  🧠 LLM (Ollama/LM Studio/Open WebUI)                      │
+│  ↓ (MCP Protocol communication)                             │
+│  🥗 Family-Serve-Delicious MCP Server                      │
+│  ↓ (Database connection)                                    │
+│  🗄️ MongoDB                                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Deployment Steps**
+
+1. **Clone and deploy on your NAS:**
+```bash
+git clone https://github.com/Axyor/family-serve-delicious
+cd family-serve-delicious
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your NAS network settings
+
+# Start production stack
+npm run prod
+```
+
+2. **Network Configuration:**
+   - **MongoDB**: `localhost:27017` (internal container communication)
+   - **Mongo Express GUI**: `http://YOUR_NAS_IP:8081` (admin/admin123)
+   - **MCP Server**: Available for local LLM connection
+
+3. **Security (Optional):**
+```yaml
+# In docker-compose.yml, limit network access:
+ports:
+  - "127.0.0.1:27017:27017"  # MongoDB local only
+  - "127.0.0.1:8081:8081"    # GUI local only
+```
+
+#### **LLM Integration Examples**
+
+**With Ollama:**
+```json
+// ~/.ollama/config.json
+{
+  "mcp_servers": {
+    "family-serve-delicious": {
+      "command": "docker",
+      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
+    }
+  }
+}
+```
+
+**With LM Studio:**
+```json
+// LM Studio MCP configuration
+{
+  "mcpServers": {
+    "family-serve-delicious": {
+      "command": "docker",
+      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
+    }
+  }
+}
+```
+
+<a id="llm-compatibility--token-optimization"></a>
+### 🧠 LLM Compatibility & Token Optimization
+
+**Key Insight:** Local LLMs with limited context windows need optimized prompts to function effectively.
+
+#### **Prompt Compatibility Matrix**
+
+| LLM Category | Context Window | Recommended Prompt | Examples |
+|-------------|----------------|-------------------|----------|
+| **Large (≥70B)** | 32K+ tokens | `system-full.md` (1,600 tokens) | GPT-4, Claude 3 |
+| **Medium (13-70B)** | 4K-16K tokens | `system.short.md` (190 tokens) | Llama 2 70B, Mixtral 8x7B |
+| **Small (7-20B)** | 2K-8K tokens | `system.short.md` (**Essential**) | GPT OSS 20B, Llama 7B-13B |
+| **Embedded** | <4K tokens | `system.short.md` (**Critical**) | Edge deployment models |
+
+#### **Tested Models**
+- ✅ **GPT OSS 20B** + `system.short.md` → Works well
+- ❌ **GPT OSS 20B** + `system-full.md` → Token budget exceeded
+- ✅ **Llama 7B-13B** → Requires `system.short.md`
+- ✅ **Mixtral 8x7B** → Both prompts work, prefer short for efficiency
+
+<a id="prompt-selection-strategy"></a>
+### 📋 Prompt Selection Strategy
+
+The MCP server provides **two system prompt versions** optimized for different LLM capabilities:
+
+| Prompt File | Size | Best For |
+|-------------|------|----------|
+| `system.short.md` | ~190 tokens | Small LLMs (7B-20B), limited context (≤16K) |
+| `system-full.md` | ~1,600 tokens | Large LLMs (≥70B), generous context (≥32K) |
+
+**Quick Selection:**
+- **Use `system.short.md`** for most local/smaller LLMs (GPT OSS 20B, Llama 7B-13B)
+- **Use `system-full.md`** for large cloud models or 70B+ local models
+
+**Implementation:** Copy the appropriate prompt file content to your MCP client configuration.
+
+```bash
+# For small LLMs
+cat src/prompts/en/system.short.md
+
+# For large LLMs  
+cat src/prompts/en/system-full.md
+```
+
+
 <a id="module-system-and-database-package"></a>
 ## 🧱 Module System & Database Package
 
-The server runs as CommonJS targeting Node 22 LTS while `@username/family-serve-database` ships as a dual package (conditional exports for both `require` and `import`).
+**Architecture:** CommonJS server (Node 22 LTS) + dual-package database module.
 
-Implications:
-- Plain `import { Database } ...` in TypeScript compiles to `require`.
-- Tooling (Jest, ts-jest) works without experimental ESM flags.
-- ESM consumers still interoperate seamlessly.
+**Database Package:** [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) `v2.1.0+`
+- TypeScript interfaces & validation schemas
+- MongoDB abstraction & business logic services  
+- Dual exports (CommonJS/ESM compatible)
 
-Upgrade checklist (if coming from older ESM‑only DB version):
-1. Upgrade `@username/family-serve-database` to >= 2.1.0 (dual exports).
-2. Remove any `await import('@username/family-serve-database')` loader code.
-3. Ensure test script no longer uses `--experimental-vm-modules`.
-4. Rebuild & run tests (should pass unchanged).
-5. (Optional) Pin Node 22 in CI using `.nvmrc` or `setup-node` `node-version: '22'`.
-
-Node 22 specifics:
-- Native ES2023 features (e.g. `Array.prototype.findLast`).
-- Faster startup; no experimental module flags.
-- Cleaner TypeScript output targeting ES2023.
+**Configuration:**
+- **Target:** ES2023 (Node 22 native features)
+- **Module:** Node16 resolution
+- **Import:** Standard `import { Database }` syntax
+- **Testing:** Jest with ts-jest (no experimental flags needed)
 
 <a id="tests"></a>
 ## 🧪 Tests
