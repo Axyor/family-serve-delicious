@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 import { initializeDatabase, disconnectDatabase, setDatabase } from './db';
 import { groupResource, groupResourceHandler } from './resources/group.resource';
 import { allGroupTools } from './tools/group.tools';
+import { allFamilyPrompts } from './prompts/family.prompts';
 
 config();
 
@@ -17,8 +18,15 @@ export { setDatabase, groupResourceHandler };
 
 const { name: resName, template, meta, handler } = groupResource();
 server.registerResource(resName, template, meta, handler);
+
+// Register tools
 for (const tool of allGroupTools()) {
     server.registerTool(tool.name, tool.meta as any, tool.handler as any);
+}
+
+// Register prompts
+for (const prompt of allFamilyPrompts()) {
+    server.registerPrompt(prompt.name, prompt.meta, prompt.handler);
 }
 const start = async () => {
     try {

@@ -2,7 +2,7 @@
 
 # 🥗🤖 Family Serve Delicious MCP Server
 
-**Model Context Protocol (MCP) server powering AI‑driven, constraint‑aware meal planning for families & groups.**
+**Model Context Protocol (MCP) server powering AI‑driven, constraint‑aware meal planning for families & groups with local LLM models.**
 
 [![MCP](https://img.shields.io/badge/protocol-MCP-blue.svg)](https://modelcontextprotocol.io/docs/getting-started/intro)
 [![context prompt-optimized](https://img.shields.io/badge/context-prompt--optimized-blue.svg)](#)
@@ -10,7 +10,7 @@
 
 </div>
 
-`family-serve-delicious` bridges an LLM with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
+`family-serve-delicious` bridges local LLM models with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable meal recommendations.
 
 > **Data layer:** [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) - Complete database abstraction with services, validation, and domain entities. Provides TypeScript interfaces, enums, and business logic for family dietary management.
 
@@ -25,17 +25,14 @@
 5. [Privacy & Anonymization](#privacy-and-anonymization)
 6. [Quick Start](#quick-start)
 7. [Development Scripts](#development-scripts)
-8. [AI Client Integration](#ai-client-integration)
+8. [Local LLM Integration](#local-llm-integration)
 9. [Configuration](#configuration)
    - [Environment Variables](#environment-variables)
    - [GitHub Token Setup](#github-token-setup)
    - [Allergen Synonyms](#allergen-synonyms-configuration)
    - [Preference Patterns](#preference-pattern-configuration)
    - [Example Family Data](#example-family-data)
-   - [Docker Architecture](#docker-architecture)
-10. [Self-Hosted Deployment](#self-hosted-deployment)
-    - [NAS/Homelab Setup](#nashomelab-setup)
-    - [LLM Compatibility & Token Optimization](#llm-compatibility--token-optimization)
+10. [Local LLM Compatibility](#local-llm-compatibility)
     - [Prompt Selection Strategy](#prompt-selection-strategy)
 11. [Module System & Database Package](#module-system-and-database-package)
 12. [Testing](#tests)
@@ -67,7 +64,9 @@
 5. LLM answers = combination of injected context + tool results
 
 <a id="resources-and-tools"></a>
-## 🗂️ Resources & Tools
+## 🗂️ Resources, Tools & Prompts
+
+### Resources & Tools
 
 | Type | Name | Description | Load | Recommended Use |
 |------|------|-------------|------|------------------|
@@ -76,6 +75,18 @@
 | Tool | `groups-summary` | List groups (no members) | Low | Exploration / selection |
 | Tool | `group-recipe-context` | Aggregated anonymized recipe context | Low→Medium | Direct prompt injection |
 | Tool | `find-members-by-restriction` | Filtered subset of one group | Low → Medium | Constraint-focused reasoning |
+
+### MCP Prompts
+
+| Name | Description | Parameters |
+|------|-------------|------------|
+| `meal-planning-system` | Base system prompt for meal planning | `language`, `format`, `groupId?` |
+| `plan-family-meals` | Generate meal suggestions with constraints | `groupId`, `mealType?`, `servings?`, `budget?` |
+| `quick-meal-suggestions` | Get 3-5 quick meal ideas (≤30min) | `groupId`, `language?` |
+| `weekly-meal-plan` | Create weekly meal plan + shopping list | `groupId`, `days?`, meal type flags |
+
+**Languages supported:** English (`en`), French (`fr`), Spanish (`es`)  
+**Usage:** Available via MCP clients that support prompts (Claude Desktop, VS Code, etc.)
 
 <a id="llm-integration-workflow"></a>
 ## 🔌 LLM Integration Workflow
@@ -219,8 +230,8 @@ For complex operations, use the simplified `manage.sh`:
 ./manage.sh reset           # Complete system reset (destructive)
 ```
 
-<a id="ai-client-integration"></a>
-## 🤖 AI Client Integration
+<a id="local-llm-integration"></a>
+## 🤖 Local LLM Integration
 
 ### Claude Desktop Integration
 
@@ -354,129 +365,13 @@ The project includes a complete example family in `config/family-example-templat
 **Customization:** Use this template as a starting point to create your own family profiles with appropriate dietary restrictions, preferences, and cooking skills.
 
 <a id="docker-architecture"></a>
-### Docker Architecture
+**Runtime Requirements:**
+- Node.js 22.x (LTS) – see `.nvmrc`
+- TypeScript target: ES2023
+- MongoDB for data storage
 
-The project uses **two docker-compose configurations**:
-
-### Production (`docker-compose.yml`)
-- **MongoDB**: Database server with persistent storage
-- **Mongo Express**: Web-based MongoDB GUI  
-- **Family Serve App**: Containerized MCP server (built from Dockerfile)
-
-### Development (`docker-compose.dev.yml`)
-- **MongoDB**: Database server with separate dev volumes
-- **Mongo Express**: Web-based MongoDB GUI
-- **Family Serve App**: Development container with hot-reload (built from Dockerfile.dev)
-
-### Direct Docker Compose Usage
-
-```bash
-# Production
-docker-compose up -d
-docker-compose ps
-docker-compose logs -f
-docker-compose down
-
-# Development
-docker-compose -f docker-compose.dev.yml up -d
-docker-compose -f docker-compose.dev.yml logs -f family-serve-app
-docker-compose -f docker-compose.dev.yml down
-```
-
-**Recommended**: Use npm scripts instead for consistency:
-```bash
-npm run prod     # Production environment
-npm run dev      # Development environment  
-npm run stop     # Stop all services
-npm run status   # View service status
-```
-
-**Runtime:**
-- Node.js 22.x (LTS) – see `.nvmrc`.
-- TypeScript target: ES2023.
-
-**Dev watch mode**: `npm run dev` (incremental build with Docker hot-reload).
-
-<a id="self-hosted-deployment"></a>
-## 🏠 Self-Hosted Deployment
-
-<a id="nashomelab-setup"></a>
-### 🔧 NAS/Homelab Setup
-
-The Family Serve Delicious MCP server is perfectly suited for self-hosted environments like NAS devices (Synology, QNAP) or homelab setups with local LLMs.
-
-#### **Architecture Overview**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Your NAS/Homelab                         │
-├─────────────────────────────────────────────────────────────┤
-│  🧠 LLM (Ollama/LM Studio/Open WebUI)                      │
-│  ↓ (MCP Protocol communication)                             │
-│  🥗 Family-Serve-Delicious MCP Server                      │
-│  ↓ (Database connection)                                    │
-│  🗄️ MongoDB                                                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### **Deployment Steps**
-
-1. **Clone and deploy on your NAS:**
-```bash
-git clone https://github.com/Axyor/family-serve-delicious
-cd family-serve-delicious
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your NAS network settings
-
-# Start production stack
-npm run prod
-```
-
-2. **Network Configuration:**
-   - **MongoDB**: `localhost:27017` (internal container communication)
-   - **Mongo Express GUI**: `http://YOUR_NAS_IP:8081` (admin/admin123)
-   - **MCP Server**: Available for local LLM connection
-
-3. **Security (Optional):**
-```yaml
-# In docker-compose.yml, limit network access:
-ports:
-  - "127.0.0.1:27017:27017"  # MongoDB local only
-  - "127.0.0.1:8081:8081"    # GUI local only
-```
-
-#### **LLM Integration Examples**
-
-**With Ollama:**
-```json
-// ~/.ollama/config.json
-{
-  "mcp_servers": {
-    "family-serve-delicious": {
-      "command": "docker",
-      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
-    }
-  }
-}
-```
-
-**With LM Studio:**
-```json
-// LM Studio MCP configuration
-{
-  "mcpServers": {
-    "family-serve-delicious": {
-      "command": "docker",
-      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
-    }
-  }
-}
-```
-
-<a id="llm-compatibility--token-optimization"></a>
-### 🧠 LLM Compatibility & Token Optimization
+<a id="local-llm-compatibility"></a>
+## 🧠 Local LLM Compatibility
 
 **Key Insight:** Local LLMs with limited context windows need optimized prompts to function effectively.
 
