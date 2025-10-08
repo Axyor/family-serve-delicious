@@ -1,26 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-
-export interface PromptMeta {
-    title: string;
-    description: string;
-    inputSchema?: Record<string, any>;
-}
-
-export interface PromptDefinition {
-    name: string;
-    meta: PromptMeta;
-    handler: (args: any) => Promise<{ 
-        messages: Array<{ 
-            role: 'user' | 'assistant';
-            content: { type: 'text', text: string };
-        }>;
-    }>;
-}
-
-type Language = 'en' | 'fr' | 'es';
-type PromptFormat = 'full' | 'short' | 'template';
+import { PromptMeta, PromptDefinition, Language, PromptFormat } from '../interfaces';
 
 const readPromptFile = (language: Language, format: PromptFormat): string => {
     const promptsDir = path.join(__dirname, '..', 'prompts');
@@ -237,7 +218,6 @@ OUTPUT FORMAT:
     };
 };
 
-// Export all prompts
 export const allFamilyPrompts = (): PromptDefinition[] => [
     {
         name: 'meal-planning-system',

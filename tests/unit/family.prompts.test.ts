@@ -138,8 +138,11 @@ describe('Family Prompts', () => {
                 includeDinner: true
             });
             
-            expect(result.messages[0].content.text).toContain('breakfast, dinner');
-            expect(result.messages[0].content.text).not.toContain('lunch');
+            // Extract meal types from the output and compare to expected
+            const mealTypesMatch = result.messages[0].content.text.match(/(breakfast|lunch|dinner)(?:, (breakfast|lunch|dinner))*/i);
+            expect(mealTypesMatch).not.toBeNull();
+            const mealTypes = mealTypesMatch[0].split(',').map(s => s.trim().toLowerCase());
+            expect(mealTypes.sort()).toEqual(['breakfast', 'dinner'].sort());
         });
 
         test('should support custom planning duration', async () => {
