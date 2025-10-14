@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getDatabase } from '../db';
-type TDietaryRestrictionType = 'FORBIDDEN' | 'REDUCED';
+import { TDietaryRestrictionType } from '../interfaces';
 import { buildRecipeContext } from './group.helpers';
 
 
