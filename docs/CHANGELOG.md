@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2025-10-14
+
+### ✨ Added
+- **MCP Prompts System**: Implementation of Model Context Protocol prompts functionality
+  - New `family.prompts.ts` module for handling MCP prompts
+  - Enhanced integration with MCP server capabilities
+  - Comprehensive test coverage for prompts functionality
+
+### 🔧 Improved
+- **Code Structure**: Externalized interfaces into dedicated directory
+  - Moved group interfaces to centralized `src/interfaces.ts`
+  - Better code organization and maintainability
+  - Improved TypeScript configuration
+
+### 📝 Documentation
+- **README**: Updated documentation to reflect new prompts functionality
+  - Enhanced MCP integration documentation
+  - Updated architecture diagrams
+
+### 🧪 Testing
+- **Integration Tests**: Added comprehensive integration tests for family prompts
+- **Unit Tests**: New unit tests for prompts functionality
+
 ## [1.1.0] - 2024-09-10
 
 ### 🎯 Major: Script Consolidation & Unified Management
