@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { IAllergyAgg, IPrefPatterns, IGroupRecipeContext, Counters } from './group.interfaces';
+import { IAllergyAgg, IPrefPatterns, IGroupRecipeContext, Counters } from '../interfaces';
 
 export const prune = (value: any): any => {
     if (Array.isArray(value)) {
