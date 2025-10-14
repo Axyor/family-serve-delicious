@@ -1,10 +1,36 @@
-export interface IAllergyAgg { substance: string; members: string[]; count: number; }
+export interface PromptMeta {
+    title: string;
+    description: string;
+    inputSchema?: Record<string, any>;
+}
+
+export interface PromptDefinition {
+    name: string;
+    meta: PromptMeta;
+    handler: (args: any) => Promise<{ 
+        messages: Array<{ 
+            role: 'user' | 'assistant';
+            content: { type: 'text', text: string };
+        }>;
+    }>;
+}
+
+export type Language = 'en' | 'fr' | 'es';
+export type PromptFormat = 'full' | 'short' | 'template';
+
+export interface IAllergyAgg { 
+    substance: string; 
+    members: string[]; 
+    count: number; 
+}
+
 export interface IPrefPatterns {
     dislikeIndicators?: string[];
     avoidIndicators?: string[];
     excludeIndicators?: string[];
     splitDelimitersRegex?: string;
 }
+
 export interface IGroupRecipeContextMember {
     id: string;
     alias?: string;
@@ -12,6 +38,7 @@ export interface IGroupRecipeContextMember {
     lastName?: string;
     ageGroup?: string;
 }
+
 export interface IGroupRecipeContext {
     type: 'group-recipe-context';
     schemaVersion: 1;
@@ -26,4 +53,8 @@ export interface IGroupRecipeContext {
     hash: string;
 }
 
-export interface Counters { [k: string]: number }
+export interface Counters { 
+    [k: string]: number 
+}
+
+export type TDietaryRestrictionType = 'FORBIDDEN' | 'REDUCED';

@@ -2,15 +2,16 @@
 
 # 🥗🤖 Family Serve Delicious MCP Server
 
-**Model Context Protocol (MCP) server powering AI‑driven, constraint‑aware meal planning for families & groups.**
+**Model Context Protocol (MCP) server powering AI‑driven, constraint‑aware meal planning for families & groups with local LLM models.**
 
 [![MCP](https://img.shields.io/badge/protocol-MCP-blue.svg)](https://modelcontextprotocol.io/docs/getting-started/intro)
-[![context prompt-optimized](https://img.shields.io/badge/context-prompt--optimized-blue.svg)](#)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 </div>
 
-`family-serve-delicious` bridges an LLM with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources + tools so the model can reason safely and generate reliable recommendations.
+`family-serve-delicious` bridges local LLM models with structured nutritional & preference data. It fetches groups, applies constraints (allergies, restrictions, health goals) and exposes normalized MCP resources, tools, and prompts so the model can reason safely and generate reliable meal recommendations.
 
 > **Data layer:** [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) - Complete database abstraction with services, validation, and domain entities. Provides TypeScript interfaces, enums, and business logic for family dietary management.
 
@@ -20,23 +21,21 @@
 
 1. [Core Capabilities](#core-capabilities)
 2. [MCP Architecture](#mcp-architecture)
-3. [Resources & Tools](#resources-and-tools)
+3. [Resources, Tools & Prompts](#resources-tools-and-prompts)
 4. [LLM Integration Workflow](#llm-integration-workflow)
 5. [Privacy & Anonymization](#privacy-and-anonymization)
 6. [Quick Start](#quick-start)
 7. [Development Scripts](#development-scripts)
 8. [AI Client Integration](#ai-client-integration)
+   - [Claude Desktop](#claude-desktop-integration)
+   - [LM Studio](#lm-studio-integration)
 9. [Configuration](#configuration)
    - [Environment Variables](#environment-variables)
    - [GitHub Token Setup](#github-token-setup)
    - [Allergen Synonyms](#allergen-synonyms-configuration)
    - [Preference Patterns](#preference-pattern-configuration)
    - [Example Family Data](#example-family-data)
-   - [Docker Architecture](#docker-architecture)
-10. [Self-Hosted Deployment](#self-hosted-deployment)
-    - [NAS/Homelab Setup](#nashomelab-setup)
-    - [LLM Compatibility & Token Optimization](#llm-compatibility--token-optimization)
-    - [Prompt Selection Strategy](#prompt-selection-strategy)
+10. [Prompt Selection Strategy](#prompt-selection-strategy)
 11. [Module System & Database Package](#module-system-and-database-package)
 12. [Testing](#tests)
 13. [License](#license)
@@ -46,36 +45,99 @@
 <a id="core-capabilities"></a>
 ## ✨ Core Capabilities
 
+### 🎯 MCP Primitives
+- 📦 **Resources:** Full group data access via URI templates
+- 🛠️ **Tools:** 4 specialized tools for group discovery and context retrieval
+- 💬 **Prompts:** 4 multilingual prompt templates for common meal planning scenarios
+
+### 🍽️ Meal Planning Features
 - 🍽️ Multi‑profile contextual meal recommendations
 - 🛡️ Strict enforcement of allergies, restrictions, dislikes
-- 📦 Structured data model (Group / MemberProfile)
 - 🧠 Lightweight RAG: targeted group context injection into the LLM
-- 🛠️ Declarative MCP tools (function calling ready)
-- 🔍 Group name lookup (avoid loading everything)
+- 🦊 Smart group lookup (avoid loading unnecessary data)
+- 🌍 Multilingual support (English, French, Spanish)
+
+### 💾 Data & Architecture
+- 🏘️ Structured data model (Group / MemberProfile)
+- 🔐 Privacy-first anonymization and aggregation
+- 🐳 Docker-ready with MongoDB persistence
+- ⚡ Optimized for local LLMs (token-efficient prompts)
 
 <a id="mcp-architecture"></a>
 ## 🧩 MCP Architecture
 
-1. Structured source (MongoDB via the database package)
-2. MCP Resource `group`: serializes a specific group
-3. Exposed read‑only tools:
-   - `find-group-by-name` (fast ID resolution)
-   - `groups-summary` (paginated lightweight list, no members)
-   - `group-recipe-context` (aggregated anonymized context for recipe generation)
-   - `find-members-by-restriction` (targeted filtering)
-4. System prompt (not included here) guides: role, safety, tool usage
-5. LLM answers = combination of injected context + tool results
+The server implements the complete Model Context Protocol specification:
 
-<a id="resources-and-tools"></a>
-## 🗂️ Resources & Tools
+1. **Data Source:** MongoDB via [`@axyor/family-serve-database`](https://github.com/Axyor/family-serve-database) package
+2. **MCP Resource:** `groups://{groupId}` - Full group serialization
+3. **MCP Tools (4):**
+   - `find-group-by-name` - Fast ID resolution
+   - `groups-summary` - Paginated lightweight list
+   - `group-recipe-context` - Aggregated anonymized context
+   - `find-members-by-restriction` - Targeted filtering
+4. **MCP Prompts (4):**
+   - `meal-planning-system` - Base system prompt
+   - `plan-family-meals` - Constraint-aware meal suggestions
+   - `quick-meal-suggestions` - Fast meal ideas
+   - `weekly-meal-plan` - Multi-day planning with shopping list
+5. **Transport:** stdio (standard input/output) for universal MCP client compatibility
+6. **LLM Integration:** Combination of injected context + tool results + prompt templates
 
-| Type | Name | Description | Load | Recommended Use |
-|------|------|-------------|------|------------------|
-| Resource | `group` | Full group details (JSON) | Medium (members count) | Deep reasoning phase |
-| Tool | `find-group-by-name` | Resolve a name → ID | Very low | First step before context load |
-| Tool | `groups-summary` | List groups (no members) | Low | Exploration / selection |
-| Tool | `group-recipe-context` | Aggregated anonymized recipe context | Low→Medium | Direct prompt injection |
-| Tool | `find-members-by-restriction` | Filtered subset of one group | Low → Medium | Constraint-focused reasoning |
+**Design Philosophy:**
+- 🔐 Privacy-first: Anonymized data by default
+- ⚡ Token-optimized: Minimal data transfer
+- 🛡️ Safety-focused: Strict constraint enforcement
+- 🔄 Cache-friendly: Hash-based context reuse
+
+<a id="resources-tools-and-prompts"></a>
+## 🗂️ Resources, Tools & Prompts
+
+The Family Serve Delicious MCP server exposes three types of MCP primitives for AI-powered meal planning:
+
+### 📦 Resources
+
+| Name | URI Pattern | Description | Use Case |
+|------|-------------|-------------|----------|
+| `group` | `groups://{groupId}` | Full group details with member profiles | When you need names or detailed personal information |
+
+### 🛠️ Tools
+
+| Name | Description | Token Cost | Recommended Use |
+|------|-------------|------------|-----------------|
+| `find-group-by-name` | Resolve group name → ID | Very low | First step: find target group |
+| `groups-summary` | List all groups (no members) | Low | Browse/explore available groups |
+| `group-recipe-context` | Aggregated anonymized constraints | Low→Medium | Primary meal planning data source |
+| `find-members-by-restriction` | Filter members by dietary restriction | Low→Medium | Targeted constraint investigation |
+
+### 💬 MCP Prompts
+
+Built-in prompt templates for common meal planning scenarios:
+
+| Name | Description | Key Parameters |
+|------|-------------|----------------|
+| `meal-planning-system` | Base system prompt for meal planning | `language`, `format`, `groupId?` |
+| `plan-family-meals` | Generate meal suggestions with constraints | `groupId`, `mealType?`, `servings?`, `budget?` |
+| `quick-meal-suggestions` | Get 3-5 quick meal ideas (≤30min) | `groupId`, `language?` |
+| `weekly-meal-plan` | Create weekly meal plan + shopping list | `groupId`, `days?`, `includeBreakfast?`, `includeLunch?`, `includeDinner?` |
+
+**Multilingual Support:** All prompts available in English (`en`), French (`fr`), and Spanish (`es`)  
+**Client Compatibility:** Works with any MCP client supporting prompts (Claude Desktop, VS Code Copilot, etc.)
+
+**Example Usage:**
+```typescript
+// Using the weekly-meal-plan prompt
+{
+  name: "weekly-meal-plan",
+  arguments: {
+    groupId: "family-alpha",
+    days: 7,
+    includeBreakfast: true,
+    includeLunch: true,
+    includeDinner: true,
+    language: "fr"
+  }
+}
+```
 
 <a id="llm-integration-workflow"></a>
 ## 🔌 LLM Integration Workflow
@@ -222,52 +284,95 @@ For complex operations, use the simplified `manage.sh`:
 <a id="ai-client-integration"></a>
 ## 🤖 AI Client Integration
 
-### Claude Desktop Integration
+The Family Serve Delicious MCP server integrates seamlessly with popular AI clients:
 
-For Claude Desktop users, the server provides native MCP integration:
+<a id="claude-desktop-integration"></a>
+### 🎯 Claude Desktop Integration
 
-1. **Generate Configuration**
-   ```bash
-   npm run claude
-   ```
+Claude Desktop provides native MCP support with an intuitive interface:
 
-2. **Start MongoDB (Required)**
-   ```bash
-   npm run db:start
-   ```
+**Quick Setup:**
+```bash
+# 1. Generate configuration
+npm run claude
 
-3. **Configure Claude Desktop**
-   - Copy the generated configuration from `config/claude_desktop_mcp_config.json`
-   - Add it to your Claude Desktop configuration file
-   - Restart Claude Desktop to load the server
+# 2. Start MongoDB
+npm run db:start
 
-For detailed setup instructions and troubleshooting:
+# 3. Build the application
+npm run build
+
+# 4. Copy generated config to Claude Desktop
+# Configuration file: config/claude_desktop_mcp_config.json
+```
+
+**Configuration Location:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+**Detailed Guide:**
 ```bash
 ./manage.sh claude help
 ```
 
-### LM Studio Integration
+Or see: [docs/CLAUDE_DESKTOP_SETUP.md](docs/CLAUDE_DESKTOP_SETUP.md)
 
-For LM Studio users, the server supports native MCP protocol:
+<a id="lm-studio-integration"></a>
+### 🧠 LM Studio Integration
 
-1. **Generate Configuration**
-   ```bash
-   npm run lm-studio
-   ```
+LM Studio offers powerful local LLM capabilities with MCP protocol support:
 
-2. **Start MongoDB (Required)**
-   ```bash
-   npm run db:start
-   ```
+**Quick Setup:**
+```bash
+# 1. Generate configuration
+npm run lm-studio
 
-3. **Add Server to LM Studio**
-   - Open LM Studio → My Projects
-   - Add the generated configuration from `config/lm_studio_mcp_config.json`
-   - The server will be available for chat interactions
+# 2. Start MongoDB
+npm run db:start
 
-For detailed setup instructions:
+# 3. Build the application
+npm run build
+
+# 4. Add server to LM Studio
+# Configuration file: config/lm_studio_mcp_config.json
+```
+
+**Configuration Location:**
+- **Windows:** `%APPDATA%\LMStudio\mcp_servers.json`
+- **macOS:** `~/Library/Application Support/LMStudio/mcp_servers.json`
+- **Linux:** `~/.config/LMStudio/mcp_servers.json`
+
+**Verify Connection:**
+1. Open LM Studio → My Projects
+2. Check that "family-serve-delicious" appears in available servers
+3. Test with: `"Use the groups-summary tool to show available groups"`
+
+**Detailed Guide:**
 ```bash
 ./manage.sh lmstudio help
+```
+
+Or see: [docs/LM_STUDIO_SETUP.md](docs/LM_STUDIO_SETUP.md)
+
+### 🔧 Other MCP Clients
+
+The server uses standard **stdio transport** and works with any MCP-compatible client:
+
+- **VS Code Copilot** - Configure via MCP settings
+- **Continue.dev** - Add to MCP servers configuration  
+- **Custom Clients** - Use the MCP SDK with stdio transport
+
+**Generic Configuration:**
+```json
+{
+  "command": "node",
+  "args": ["/absolute/path/to/family-serve-delicious/dist/index.js"],
+  "env": {
+    "MONGODB_URI": "mongodb://localhost:27017/family_serve",
+    "NODE_ENV": "production"
+  }
+}
 ```
 
 <a id="configuration"></a>
@@ -354,129 +459,13 @@ The project includes a complete example family in `config/family-example-templat
 **Customization:** Use this template as a starting point to create your own family profiles with appropriate dietary restrictions, preferences, and cooking skills.
 
 <a id="docker-architecture"></a>
-### Docker Architecture
+**Runtime Requirements:**
+- Node.js 22.x (LTS) – see `.nvmrc`
+- TypeScript target: ES2023
+- MongoDB for data storage
 
-The project uses **two docker-compose configurations**:
-
-### Production (`docker-compose.yml`)
-- **MongoDB**: Database server with persistent storage
-- **Mongo Express**: Web-based MongoDB GUI  
-- **Family Serve App**: Containerized MCP server (built from Dockerfile)
-
-### Development (`docker-compose.dev.yml`)
-- **MongoDB**: Database server with separate dev volumes
-- **Mongo Express**: Web-based MongoDB GUI
-- **Family Serve App**: Development container with hot-reload (built from Dockerfile.dev)
-
-### Direct Docker Compose Usage
-
-```bash
-# Production
-docker-compose up -d
-docker-compose ps
-docker-compose logs -f
-docker-compose down
-
-# Development
-docker-compose -f docker-compose.dev.yml up -d
-docker-compose -f docker-compose.dev.yml logs -f family-serve-app
-docker-compose -f docker-compose.dev.yml down
-```
-
-**Recommended**: Use npm scripts instead for consistency:
-```bash
-npm run prod     # Production environment
-npm run dev      # Development environment  
-npm run stop     # Stop all services
-npm run status   # View service status
-```
-
-**Runtime:**
-- Node.js 22.x (LTS) – see `.nvmrc`.
-- TypeScript target: ES2023.
-
-**Dev watch mode**: `npm run dev` (incremental build with Docker hot-reload).
-
-<a id="self-hosted-deployment"></a>
-## 🏠 Self-Hosted Deployment
-
-<a id="nashomelab-setup"></a>
-### 🔧 NAS/Homelab Setup
-
-The Family Serve Delicious MCP server is perfectly suited for self-hosted environments like NAS devices (Synology, QNAP) or homelab setups with local LLMs.
-
-#### **Architecture Overview**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Your NAS/Homelab                         │
-├─────────────────────────────────────────────────────────────┤
-│  🧠 LLM (Ollama/LM Studio/Open WebUI)                      │
-│  ↓ (MCP Protocol communication)                             │
-│  🥗 Family-Serve-Delicious MCP Server                      │
-│  ↓ (Database connection)                                    │
-│  🗄️ MongoDB                                                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### **Deployment Steps**
-
-1. **Clone and deploy on your NAS:**
-```bash
-git clone https://github.com/Axyor/family-serve-delicious
-cd family-serve-delicious
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your NAS network settings
-
-# Start production stack
-npm run prod
-```
-
-2. **Network Configuration:**
-   - **MongoDB**: `localhost:27017` (internal container communication)
-   - **Mongo Express GUI**: `http://YOUR_NAS_IP:8081` (admin/admin123)
-   - **MCP Server**: Available for local LLM connection
-
-3. **Security (Optional):**
-```yaml
-# In docker-compose.yml, limit network access:
-ports:
-  - "127.0.0.1:27017:27017"  # MongoDB local only
-  - "127.0.0.1:8081:8081"    # GUI local only
-```
-
-#### **LLM Integration Examples**
-
-**With Ollama:**
-```json
-// ~/.ollama/config.json
-{
-  "mcp_servers": {
-    "family-serve-delicious": {
-      "command": "docker",
-      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
-    }
-  }
-}
-```
-
-**With LM Studio:**
-```json
-// LM Studio MCP configuration
-{
-  "mcpServers": {
-    "family-serve-delicious": {
-      "command": "docker",
-      "args": ["exec", "family-serve-app", "node", "dist/index.js"]
-    }
-  }
-}
-```
-
-<a id="llm-compatibility--token-optimization"></a>
-### 🧠 LLM Compatibility & Token Optimization
+<a id="local-llm-compatibility"></a>
+## 🧠 Local LLM Compatibility
 
 **Key Insight:** Local LLMs with limited context windows need optimized prompts to function effectively.
 
@@ -529,21 +518,31 @@ cat src/prompts/en/system-full.md
 - TypeScript interfaces & validation schemas
 - MongoDB abstraction & business logic services  
 - Dual exports (CommonJS/ESM compatible)
+- Complete domain models for dietary management
 
 **Configuration:**
 - **Target:** ES2023 (Node 22 native features)
-- **Module:** Node16 resolution
+- **Module:** Node16 resolution  
 - **Import:** Standard `import { Database }` syntax
 - **Testing:** Jest with ts-jest (no experimental flags needed)
 
+**Key Features:**
+- ✅ Type-safe database operations
+- ✅ Validation schemas with Zod
+- ✅ Service layer for business logic
+- ✅ Domain entities (Group, MemberProfile, etc.)
+- ✅ Enums for dietary restrictions, allergens, health goals
+
 <a id="tests"></a>
-## 🧪 Tests
+## 🧪 Testing
+
+The project includes comprehensive test coverage with unit and integration tests:
 
 ```bash
-npm test  # jest (unit + integration)
+npm test                    # Run all tests
+npm test -- --watch        # Run tests in watch mode
+npm test -- --coverage     # Generate coverage report
 ```
-
-Tests mock the DB package to avoid a real Mongo instance (unless you add e2e suites).
 
 <a id="license"></a>
 ## 📜 License
