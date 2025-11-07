@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2025-11-07
+
+### 🔧 Updated
+- **Dependencies**: Updated project dependencies
+  - Updated `@modelcontextprotocol/sdk` to latest version
+  - Updated build scripts and tooling
+
 ## [1.2.1] - 2025-10-14
 
 ### ✨ Added
