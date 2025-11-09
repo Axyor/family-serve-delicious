@@ -159,21 +159,39 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     };
 
     const processCuisinePreferences = (member: any, cuisinesLikedSet: Set<string>) => {
-        if (!Array.isArray(member.cuisinePreferences)) return;
-        for (const cuisine of member.cuisinePreferences) {
-            if (typeof cuisine === 'string' && cuisine.trim()) {
-                cuisinesLikedSet.add(cuisine.trim().toLowerCase());
+
+        if (Array.isArray(member.cuisinePreferences)) {
+            for (const cuisine of member.cuisinePreferences) {
+                if (typeof cuisine === 'string' && cuisine.trim()) {
+                    cuisinesLikedSet.add(cuisine.trim().toLowerCase());
+                }
+            }
+        }
+        
+        const preferences = member.dietaryProfile?.preferences;
+        if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
+            const likes = preferences.likes || [];
+            if (Array.isArray(likes)) {
+                likes.forEach((item: string) => {
+                    if (typeof item === 'string' && item.trim()) {
+                        cuisinesLikedSet.add(item.trim().toLowerCase());
+                    }
+                });
             }
         }
     };
 
     const processPreferences = (member: any, dislikesSet: Set<string>) => {
         const preferences = member.dietaryProfile?.preferences;
-        if (!Array.isArray(preferences)) return;
-        for (const preference of preferences) {
-            if (typeof preference === 'string') {
-                extractNegativeTokens(preference).forEach(token => dislikesSet.add(token));
-            }
+        if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return;
+        
+        const dislikes = preferences.dislikes || [];
+        if (Array.isArray(dislikes)) {
+            dislikes.forEach((item: string) => {
+                if (typeof item === 'string' && item.trim()) {
+                    dislikesSet.add(item.trim().toLowerCase());
+                }
+            });
         }
     };
 
