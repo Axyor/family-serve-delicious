@@ -1,6 +1,6 @@
 {
   "name": "family-serve-delicious",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "A server to manage dietary profiles (preferences, needs, allergies) for a family or group.",
   "main": "dist/index.js",
   "scripts": {

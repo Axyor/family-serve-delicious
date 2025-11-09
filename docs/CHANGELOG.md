@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2025-11-09
+
+### 🚀 Major Changes
+- **Breaking Change**: Compatibility update for `family-serve-database` v2.2.0
+  - Updated to support new database schema and API changes
+  - Enhanced allergen normalization system with improved synonym mapping
+  - Improved data structure handling in group helpers
+
+### 🔧 Updated
+- **Dependencies**: Updated `@axyor/family-serve-database` to v2.2.0
+- **Core Logic**: Enhanced `group.helpers.ts` with better allergen processing
+  - Improved `AllergenSynonymIndex` class implementation
+  - Better handling of allergen canonical names
+  - Enhanced data pruning and normalization functions
+
+### 🧪 Testing
+- **Integration Tests**: Expanded test coverage for group tools
+  - Added more test cases for allergen handling
+  - Improved validation of group recipe context generation
+
+### 📝 Configuration
+- **Template Updates**: Updated `family-example-template.json` structure
+  - Aligned with new database requirements
+  - Enhanced example data format
+
 ## [1.2.2] - 2025-11-07
 
 ### 🔧 Updated
