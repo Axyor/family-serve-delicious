@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getDatabase } from '../db';
-import { TDietaryRestrictionType } from '../interfaces';
 import { buildRecipeContext } from './group.helpers';
+import { TDietaryRestrictionType } from '../interfaces';
 
 
 export const findGroupByNameHandler = async (args: any) => {

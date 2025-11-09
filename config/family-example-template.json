@@ -19,12 +19,15 @@
       "mealFrequency": 3,
       "fastingWindow": null,
       "dietaryProfile": {
-        "preferences": [
-          "sophisticated cuisine",
-          "rare ingredients",
-          "fine dining",
-          "elegant presentation"
-        ],
+        "preferences": {
+          "likes": [
+            "sophisticated cuisine",
+            "rare ingredients",
+            "fine dining",
+            "elegant presentation"
+          ],
+          "dislikes": []
+        },
         "allergies": [],
         "restrictions": [
           {
@@ -51,15 +54,18 @@
       "mealFrequency": 7,
       "fastingWindow": null,
       "dietaryProfile": {
-        "preferences": [
-          "bread and butter",
-          "bacon and eggs",
-          "fruit tarts",
-          "ale and beer",
-          "roasted meats",
-          "mushrooms",
-          "second breakfast"
-        ],
+        "preferences": {
+          "likes": [
+            "bread and butter",
+            "bacon and eggs",
+            "fruit tarts",
+            "ale and beer",
+            "roasted meats",
+            "mushrooms",
+            "second breakfast"
+          ],
+          "dislikes": []
+        },
         "allergies": [],
         "restrictions": [
           {
@@ -86,14 +92,17 @@
       "mealFrequency": 4,
       "fastingWindow": null,
       "dietaryProfile": {
-        "preferences": [
-          "chocolate creations",
-          "exotic fruits",
-          "colorful confections",
-          "innovative sweets",
-          "candy experiments",
-          "sugar artistry"
-        ],
+        "preferences": {
+          "likes": [
+            "chocolate creations",
+            "exotic fruits",
+            "colorful confections",
+            "innovative sweets",
+            "candy experiments",
+            "sugar artistry"
+          ],
+          "dislikes": []
+        },
         "allergies": [],
         "restrictions": [
           {
@@ -120,15 +129,18 @@
       "mealFrequency": 5,
       "fastingWindow": null,
       "dietaryProfile": {
-        "preferences": [
-          "colorful salads",
-          "pink smoothies", 
-          "Instagram-worthy meals",
-          "rainbow vegetables",
-          "pretty cupcakes",
-          "aesthetic presentation",
-          "fresh organic produce"
-        ],
+        "preferences": {
+          "likes": [
+            "colorful salads",
+            "pink smoothies", 
+            "Instagram-worthy meals",
+            "rainbow vegetables",
+            "pretty cupcakes",
+            "aesthetic presentation",
+            "fresh organic produce"
+          ],
+          "dislikes": []
+        },
         "allergies": [],
         "restrictions": [
           {
