@@ -43,12 +43,24 @@ const mkMember = (i: number, extras: any = {}) => ({
 const groups = [
     {
         id: 'g1', name: 'Alpha', members: [
-            mkMember(1, { cuisinePreferences: ['Italian', 'Thai'], dietaryProfile: { preferences: ['avoid cilantro'], allergies: ['Peanuts'], restrictions: [{ type: 'FORBIDDEN', reason: 'NO_PORK' }, { type: 'REDUCED', reason: 'LOW_CARB' }] } }),
-            mkMember(2, { cuisinePreferences: ['thai', 'Japanese'], dietaryProfile: { preferences: ['dislike okra'], allergies: ['peanuts', 'Shellfish'], restrictions: [{ type: 'FORBIDDEN', reason: 'GLUTEN_FREE' }] } }),
+            mkMember(1, { cuisinePreferences: ['Italian', 'Thai'], dietaryProfile: { preferences: { likes: [], dislikes: ['cilantro'] }, allergies: ['Peanuts'], restrictions: [{ type: 'FORBIDDEN', reason: 'NO_PORK' }, { type: 'REDUCED', reason: 'LOW_CARB' }] } }),
+            mkMember(2, { cuisinePreferences: ['thai', 'Japanese'], dietaryProfile: { preferences: { likes: [], dislikes: ['okra'] }, allergies: ['peanuts', 'Shellfish'], restrictions: [{ type: 'FORBIDDEN', reason: 'GLUTEN_FREE' }] } }),
         ]
     },
     { id: 'g2', name: 'Beta', members: [mkMember(3)] },
     { id: 'g3', name: 'Gamma', members: [] },
+
+    { 
+        id: 'g4', name: 'NewFormat', members: [
+            mkMember(4, { 
+                dietaryProfile: { 
+                    preferences: { likes: ['pasta', 'sushi'], dislikes: ['mushrooms', 'olives'] }, 
+                    allergies: ['eggs'], 
+                    restrictions: [{ type: 'REDUCED', reason: 'sugar' }] 
+                } 
+            })
+        ]
+    },
 ];
 
 class ITMockGroupService {
@@ -71,7 +83,7 @@ describe('groups tools', () => {
         const res: any = await toolMap['groups-summary']({ limit: 10 });
         const payload = JSON.parse(res.content[0].text);
         expect(payload.type).toBe('groups-summary');
-        expect(payload.groups.length).toBe(3);
+        expect(payload.groups.length).toBe(4);
         expect(payload.groups[0].members).toBeUndefined();
     });
 
@@ -92,5 +104,22 @@ describe('groups tools', () => {
 
         expect(payload.softPreferences.cuisinesLiked).toEqual(expect.arrayContaining(['italian', 'japanese', 'thai']));
         expect(payload.softPreferences.dislikes).toEqual(expect.arrayContaining(['cilantro', 'okra']));
+    });
+
+    test('group-recipe-context handles new v2.2.0 preferences format (likes/dislikes object)', async () => {
+        const res: any = await toolMap['group-recipe-context']({ id: 'g4' });
+        const payload = JSON.parse(res.content[0].text);
+        expect(payload.type).toBe('group-recipe-context');
+        expect(payload.group.id).toBe('g4');
+        expect(payload.members.length).toBe(1);
+
+        expect(payload.softPreferences?.cuisinesLiked).toEqual(expect.arrayContaining(['pasta', 'sushi']));
+        expect(payload.softPreferences?.dislikes).toEqual(expect.arrayContaining(['mushrooms', 'olives']));
+        
+        const eggAllergy = payload.allergies.find((a: any) => a.substance === 'egg');
+        expect(eggAllergy).toBeDefined();
+        expect(eggAllergy.count).toBe(1);
+        
+        expect(payload.softRestrictions).toEqual(expect.arrayContaining(['sugar']));
     });
 });

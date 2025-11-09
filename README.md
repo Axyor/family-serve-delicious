@@ -447,7 +447,7 @@ The server uses `config/preference-patterns.json` for **multilingual negative pr
 <a id="exemple-family-data"></a>
 ### Example Family Data
 
-The project includes a complete example family in `config/family-example-template.json` to help you understand the data structure and test the system:
+The project includes a complete example family in `config/family-example-template.json` to help you understand the data structure and test the system.
 
 **Usage:**
 ```bash
