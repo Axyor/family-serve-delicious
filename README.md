@@ -209,9 +209,56 @@ The `group-recipe-context` tool implements **privacy-first design** while preser
 <a id="quick-start"></a>
 ## 🚀 Quick Start
 
+### 🔒 Security Configuration (Required)
+
+**CRITICAL:** This project requires authentication credentials for MongoDB and Mongo Express.
+
+#### 1. Generate Strong Credentials
+
+```bash
+# Generate MongoDB admin password (32 characters)
+openssl rand -base64 32 | head -c 32
+
+# Generate Mongo Express password (32 characters)  
+openssl rand -base64 32 | head -c 32
+```
+
+#### 2. Configure Environment Variables
+
+Create a `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set the following variables:
+
+```bash
+# MongoDB Authentication (REQUIRED)
+MONGODB_USERNAME=family_serve_admin
+MONGODB_PASSWORD=<paste_generated_password_here>
+
+# Mongo Express Authentication (REQUIRED)
+ME_USERNAME=admin_custom
+ME_PASSWORD=<paste_generated_password_here>
+
+# GitHub Token (for private packages)
+GITHUB_TOKEN=<your_github_token>
+
+# MongoDB URI (will use credentials automatically)
+MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/family_serve?authSource=admin
+NODE_ENV=production
+```
+
+**⚠️ Security Notes:**
+- Never commit `.env` to version control
+- Use different passwords for development and production
+- MongoDB and Mongo Express are bound to `127.0.0.1` (localhost only)
+- Passwords must be strong (32+ random characters)
+
 ### 🔑 GitHub Token Configuration (Required)
 
-This project uses a private npm package `@axyor/family-serve-database`. Configure your GitHub Personal Access Token first:
+This project uses a private npm package `@axyor/family-serve-database`. Configure your GitHub Personal Access Token:
 
 ```bash
 ./manage.sh setup
@@ -224,13 +271,21 @@ git clone <repository-url>
 cd your-project-name
 nvm use || echo "(Optional) Use Node 22 LTS: nvm install 22"
 npm install
-./manage.sh setup  # Configure GitHub token + build
-npm run dev        # Start development environment
+
+# 1. Configure authentication (see above)
+cp .env.example .env
+# Edit .env with your credentials
+
+# 2. Setup GitHub token + build
+./manage.sh setup
+
+# 3. Start development environment
+npm run dev
 ```
 
 This starts everything you need:
-- MongoDB database
-- Mongo Express GUI (http://localhost:8081)
+- MongoDB database (authenticated, localhost only)
+- Mongo Express GUI (http://localhost:8081, authenticated)
 - Family Serve MCP Server in development mode
 <a id="development-scripts"></a>
 ## 🛠️ Development Scripts
@@ -381,10 +436,23 @@ The server uses standard **stdio transport** and works with any MCP-compatible c
 <a id="environment-variables"></a>
 ### Environment Variables
 
-| Name | Description |
-|------|-------------|
-| `MONGODB_URI` | MongoDB connection string |
-| `NODE_ENV` | Environment (development/production) |
+**Required Variables:**
+
+| Name | Description | Example |
+|------|-------------|---------|
+| `MONGODB_USERNAME` | MongoDB admin username | `family_serve_admin` |
+| `MONGODB_PASSWORD` | MongoDB admin password (32+ chars) | `<generated_strong_password>` |
+| `ME_USERNAME` | Mongo Express username | `admin_custom` |
+| `ME_PASSWORD` | Mongo Express password (32+ chars) | `<generated_strong_password>` |
+| `MONGODB_URI` | MongoDB connection string with auth | `mongodb://user:pass@mongodb:27017/family_serve?authSource=admin` |
+| `GITHUB_TOKEN` | GitHub PAT for private packages | `ghp_xxxxxxxxxxxxx` |
+| `NODE_ENV` | Environment mode | `development` or `production` |
+
+**Generating Strong Passwords:**
+```bash
+# Generate a 32-character random password
+openssl rand -base64 32 | head -c 32
+```
 
 <a id="github-token-setup"></a>
 ### GitHub Token Setup
