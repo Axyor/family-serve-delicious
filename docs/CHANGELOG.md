@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2025-11-15
+
+### 🔒 Security Enhancements
+- **Input Sanitization**: Implementation of comprehensive input sanitization system
+  - HTML sanitization for all text inputs to prevent XSS attacks
+  - Path traversal prevention for file operations
+  - MongoDB injection protection with query validation
+  - Command injection prevention
+  - New `sanitization.ts` module with extensive validation functions
+
+- **Output Validation**: Robust output validation framework
+  - Schema-based validation for all API responses
+  - Type checking and data structure validation
+  - Safe error message handling to prevent information leakage
+  - New `output-validation.ts` module with comprehensive validators
+
+### 🧪 Testing
+- **Security Tests**: Complete security test suite
+  - Unit tests for sanitization functions
+  - Unit tests for output validation
+  - Coverage for XSS, path traversal, and injection attacks
+
+### 📝 Documentation
+- **Security Documentation**: Comprehensive security documentation
+  - `MONGODB_SECURITY.md`: MongoDB security best practices
+  - `SANITIZATION_IMPLEMENTATION.md`: Input sanitization guide
+  - `OUTPUT_VALIDATION_IMPLEMENTATION.md`: Output validation guide
+  - `AUDIT_BONNES_PRATIQUES_MCP.md`: MCP security audit and best practices
+
+### 🔧 Improved
+- **Code Quality**: Enhanced security posture across all modules
+- **Error Handling**: Safer error messages without sensitive data exposure
+
 ## [2.0.0] - 2025-11-09
 
 ### 🚀 Major Changes
