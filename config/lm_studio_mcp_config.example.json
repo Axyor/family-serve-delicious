@@ -1,11 +1,14 @@
 {
   "servers": {
-    "your-project-name": {
+    "family-serve-delicious": {
       "command": "node",
-      "args": ["/path/to/your/project/dist/index.js"],
+      "args": ["<PATH_TO_PROJECT>/dist/index.js"],
       "env": {
-        "MONGODB_URI": "mongodb://localhost:27017/family_serve",
-        "NODE_ENV": "production"
+        "MONGODB_URI": "mongodb://family_serve_admin:<PASSWORD>@localhost:27017/family_serve?authSource=admin",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
     }
   }
