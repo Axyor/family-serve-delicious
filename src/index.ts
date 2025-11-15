@@ -5,6 +5,7 @@ import { initializeDatabase, disconnectDatabase, setDatabase } from './db';
 import { groupResource, groupResourceHandler } from './resources/group.resource';
 import { allGroupTools } from './tools/group.tools';
 import { allFamilyPrompts } from './prompts/family.prompts';
+import { OutputValidator } from './security/output-validation';
 
 config();
 
@@ -21,8 +22,31 @@ export { setDatabase, groupResourceHandler };
 const { name: resName, template, meta, handler } = groupResource();
 server.registerResource(resName, template, meta, handler);
 
+const wrapHandlerWithValidation = (handler: (...args: any[]) => Promise<any>, toolName: string) => {
+    return async (args: any) => {
+        const result = await handler(args);
+        const validation = OutputValidator.validateOutput(result, { toolName });
+
+        if (!validation.safe) {
+            console.warn(`⚠️  Output validation warnings for ${toolName}:`, validation.warnings);
+            const strictness = OutputValidator.getStrictness();
+
+            if (strictness === 'mask') {
+                return OutputValidator.maskPII(result);
+            }
+
+            if (strictness === 'block') {
+                throw new Error(`Output blocked for ${toolName}: ${validation.warnings.join('; ')}`);
+            }
+        }
+
+        return result;
+    };
+};
+
 for (const tool of allGroupTools()) {
-    server.registerTool(tool.name, tool.meta as any, tool.handler as any);
+    const wrappedHandler = wrapHandlerWithValidation(tool.handler, tool.name);
+    server.registerTool(tool.name, tool.meta as any, wrappedHandler as any);
 }
 
 for (const prompt of allFamilyPrompts()) {

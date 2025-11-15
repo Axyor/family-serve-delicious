@@ -35,19 +35,42 @@ If the file doesn't exist or is empty, copy the entire content from `config/clau
 #### Option B: Merge with existing configuration
 If you already have other MCP servers configured, add the `family-serve-delicious` entry to your existing `mcpServers` section:
 
-```json
-If you already have other MCP servers configured, add the `your-project-name` entry to your existing `mcpServers` section:
-
+**Without authentication (not recommended):**
 ```json
 {
   "mcpServers": {
-    "your-project-name": {
+    "family-serve-delicious": {
       "command": "node",
       "args": ["/absolute/path/to/your/project/dist/index.js"],
       "env": {
-        "MONGODB_URI": "mongodb://localhost:27017/family_serve"
+        "MONGODB_URI": "mongodb://localhost:27017/family_serve",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
-    },
+    }
+  }
+}
+```
+
+**With authentication (recommended):**
+```json
+{
+  "mcpServers": {
+    "family-serve-delicious": {
+      "command": "node",
+      "args": ["/absolute/path/to/your/project/dist/index.js"],
+      "env": {
+        "MONGODB_URI": "mongodb://your_username:your_password@localhost:27017/family_serve?authSource=admin",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
+      }
+    }
+  }
+}
 ```
 
 ### Step 4: Start Required Services

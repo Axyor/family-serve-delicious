@@ -29,6 +29,14 @@ npm run setup
 ```bash
 # Edit .env file
 GITHUB_TOKEN=ghp_your_token_here
+
+# Also configure MongoDB authentication (recommended)
+MONGODB_USERNAME=family_serve_admin
+MONGODB_PASSWORD=<your-strong-password>
+
+# And Mongo Express credentials
+ME_USERNAME=admin_custom
+ME_PASSWORD=<your-strong-password>
 ```
 
 #### Method 2: .npmrc File (Recommended for Local Development)  
@@ -76,6 +84,8 @@ Or use the configuration script:
 - Token gives read access to @axyor organization packages only
 - Regenerate tokens periodically for security
 - Use different tokens for different projects/environments
+- **Use strong passwords** for MongoDB (32+ characters recommended)
+- **Enable MongoDB authentication** in production environments
 
 ## 🛠 Troubleshooting
 
@@ -100,3 +110,8 @@ npm run setup
 ```
 
 This will guide you through the entire process step by step.
+
+## 📚 Related Documentation
+
+- **Claude Desktop**: `docs/CLAUDE_DESKTOP_SETUP.md` - Claude integration
+- **LM Studio**: `docs/LM_STUDIO_SETUP.md` - LM Studio integration
