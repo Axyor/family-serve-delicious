@@ -136,6 +136,15 @@ lm_studio_config() {
     local current_dir=$(pwd)
     local config_file="config/lm_studio_mcp_config.json"
     
+    # Load MongoDB credentials from .env if available
+    local mongodb_uri="${MONGODB_URI:-mongodb://localhost:27017/family_serve}"
+    if [ -f ".env" ]; then
+        source .env 2>/dev/null || true
+        if [ -n "$MONGODB_USERNAME" ] && [ -n "$MONGODB_PASSWORD" ]; then
+            mongodb_uri="mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@localhost:27017/family_serve?authSource=admin"
+        fi
+    fi
+    
     cat > "$config_file" << EOFCONFIG
 {
   "servers": {
@@ -143,8 +152,11 @@ lm_studio_config() {
       "command": "node",
       "args": ["$current_dir/dist/index.js"],
       "env": {
-        "MONGODB_URI": "${MONGODB_URI:-mongodb://localhost:27017/family_serve}",
-        "NODE_ENV": "production"
+        "MONGODB_URI": "$mongodb_uri",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
     }
   }
@@ -179,6 +191,14 @@ claude_desktop_config() {
     local current_dir=$(pwd)
     local config_file="config/claude_desktop_mcp_config.json"
     
+    local mongodb_uri="${MONGODB_URI:-mongodb://localhost:27017/family_serve}"
+    if [ -f ".env" ]; then
+        source .env 2>/dev/null || true
+        if [ -n "$MONGODB_USERNAME" ] && [ -n "$MONGODB_PASSWORD" ]; then
+            mongodb_uri="mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@localhost:27017/family_serve?authSource=admin"
+        fi
+    fi
+    
     cat > "$config_file" << EOFCLAUDECONFIG
 {
   "mcpServers": {
@@ -186,8 +206,11 @@ claude_desktop_config() {
       "command": "node",
       "args": ["$current_dir/dist/index.js"],
       "env": {
-        "MONGODB_URI": "${MONGODB_URI:-mongodb://localhost:27017/family_serve}",
-        "NODE_ENV": "production"
+        "MONGODB_URI": "$mongodb_uri",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
     }
   }
