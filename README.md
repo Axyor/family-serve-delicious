@@ -454,6 +454,14 @@ The server uses standard **stdio transport** and works with any MCP-compatible c
 openssl rand -base64 32 | head -c 32
 ```
 
+**Optional Safety Controls:**
+
+| Name | Description | Default |
+|------|-------------|---------|
+| `OUTPUT_VALIDATION_MODE` | Enforcement mode for tool responses (`warn`, `mask`, `block`) | `warn` |
+| `OUTPUT_VALIDATION_MAX_LENGTH` | Character threshold before large-output warnings | `50000` |
+| `OUTPUT_VALIDATION_LOG_PATH` | Destination for JSONL audit records | `logs/output-validation.log` |
+
 <a id="github-token-setup"></a>
 ### GitHub Token Setup
 
