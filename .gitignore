@@ -10,6 +10,9 @@
 # Build output folder
 /dist
 
+# Runtime audit logs
+/logs
+
 # Configuration files with absolute paths (use ./manage.sh to generate)
 /config/*_mcp_config.json
 /config/claude_desktop_config.json

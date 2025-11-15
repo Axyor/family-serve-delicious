@@ -64,6 +64,7 @@ This generates a configuration file with the correct paths automatically and dis
 
 Create or edit the `mcp_servers.json` file with your project's absolute path:
 
+**Without authentication (not recommended):**
 ```json
 {
   "name": "family-serve-delicious",
@@ -71,7 +72,26 @@ Create or edit the `mcp_servers.json` file with your project's absolute path:
   "args": ["/path/to/your/project/dist/index.js"],
   "env": {
     "MONGODB_URI": "mongodb://localhost:27017/family_serve",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "OUTPUT_VALIDATION_MODE": "warn",
+    "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+    "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
+  }
+}
+```
+
+**With authentication (recommended):**
+```json
+{
+  "name": "family-serve-delicious",
+  "command": "node",
+  "args": ["/path/to/your/project/dist/index.js"],
+  "env": {
+    "MONGODB_URI": "mongodb://your_username:your_password@localhost:27017/family_serve?authSource=admin",
+    "NODE_ENV": "production",
+    "OUTPUT_VALIDATION_MODE": "warn",
+    "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+    "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
   }
 }
 
@@ -111,7 +131,10 @@ const config = {
       args: ['$(pwd)/dist/index.js'],
       env: {
         MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/family_serve',
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        OUTPUT_VALIDATION_MODE: 'warn',
+        OUTPUT_VALIDATION_MAX_LENGTH: '50000',
+        OUTPUT_VALIDATION_LOG_PATH: 'logs/output-validation.log'
       }
     }
   }
@@ -187,7 +210,10 @@ If you want LM Studio to use the Docker container directly:
         "/app/dist/index.js"
       ],
       "env": {
-        "MONGODB_URI": "mongodb://mongodb:27017/family_serve"
+        "MONGODB_URI": "mongodb://your_username:your_password@mongodb:27017/family_serve?authSource=admin",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
     }
   }
@@ -206,8 +232,11 @@ For development with hot-reload, replace `/path/to/your/project` with your actua
       "args": ["run", "dev"],
       "cwd": "/path/to/your/project",
       "env": {
-        "MONGODB_URI": "mongodb://localhost:27017/family_serve",
-        "NODE_ENV": "development"
+        "MONGODB_URI": "mongodb://your_username:your_password@localhost:27017/family_serve?authSource=admin",
+        "NODE_ENV": "development",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
       }
     }
   }

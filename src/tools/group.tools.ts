@@ -2,10 +2,13 @@ import { z } from 'zod';
 import { getDatabase } from '../db';
 import { buildRecipeContext } from './group.helpers';
 import { TDietaryRestrictionType } from '../interfaces';
+import { InputSanitizer } from '../security/sanitization';
 
 
 export const findGroupByNameHandler = async (args: any) => {
-    const { name } = args as { name: string };
+
+    const sanitized = InputSanitizer.sanitizeObject(args);
+    const { name } = sanitized as { name: string };
     const group = await getDatabase().getGroupService().findByName(name);
     if (!group) return { content: [{ type: 'text' as const, text: `No group found for name: ${name}` }] } as any;
     const structured = {
@@ -23,7 +26,9 @@ export const findGroupByNameTool = () => ({
 });
 
 export const findMembersByRestrictionHandler = async (args: any) => {
-    const { groupId, restrictionType, reason } = args as { groupId: string; restrictionType: TDietaryRestrictionType; reason?: string };
+    
+    const sanitized = InputSanitizer.sanitizeObject(args);
+    const { groupId, restrictionType, reason } = sanitized as { groupId: string; restrictionType: TDietaryRestrictionType; reason?: string };
     const result = await getDatabase().getGroupService().findMembersByRestriction(groupId, restrictionType, reason);
     if (!result) return { content: [{ type: 'text' as const, text: 'Group not found or no matching members' }] } as any;
     return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] } as any;
@@ -36,7 +41,9 @@ export const findMembersByRestrictionTool = () => ({
 
 
 export const getGroupsSummaryHandler = async (args: any) => {
-    const { limit = 20, offset = 0 } = args as { limit?: number; offset?: number };
+
+    const sanitized = InputSanitizer.sanitizeObject(args);
+    const { limit = 20, offset = 0 } = sanitized as { limit?: number; offset?: number };
     const service: any = getDatabase().getGroupService();
     let groups: any[] | undefined;
     if (typeof service.listGroups === 'function') groups = await service.listGroups();
@@ -55,7 +62,9 @@ export const getGroupsSummaryTool = () => ({
 });
 
 export const getGroupRecipeContextHandler = async (args: any) => {
-    const { id, anonymize = true } = args as { id: string; anonymize?: boolean };
+
+    const sanitized = InputSanitizer.sanitizeObject(args);
+    const { id, anonymize = true } = sanitized as { id: string; anonymize?: boolean };
     const group = await getDatabase().getGroupService().getGroup(id);
     if (!group) return { content: [{ type: 'text' as const, text: `Group not found: ${id}` }] } as any;
     const context = buildRecipeContext(group, anonymize);
