@@ -435,6 +435,9 @@ openssl rand -base64 32 | head -c 32
 | `OUTPUT_VALIDATION_MODE` | Enforcement mode for tool responses (`warn`, `mask`, `block`) | `warn` |
 | `OUTPUT_VALIDATION_MAX_LENGTH` | Character threshold before large-output warnings | `50000` |
 | `OUTPUT_VALIDATION_LOG_PATH` | Destination for JSONL audit records | `logs/output-validation.log` |
+| `ALLOW_RAW_CONTEXT` | Allow non-anonymized member data in `group-recipe-context` | `false` |
+
+**Privacy Note:** By default, `group-recipe-context` always returns anonymized member data (aliases and age groups only). Set `ALLOW_RAW_CONTEXT=true` to permit the `anonymize=false` parameter, which exposes first/last names. This is recommended only for trusted, private deployments.
 
 <a id="github-token-setup"></a>
 ### GitHub Token Setup
