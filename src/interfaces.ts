@@ -1,7 +1,7 @@
 export interface PromptMeta {
     title: string;
     description: string;
-    inputSchema?: Record<string, any>;
+    argsSchema?: Record<string, any>;
 }
 
 export interface PromptDefinition {

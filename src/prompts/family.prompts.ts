@@ -224,7 +224,7 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         meta: {
             title: 'Meal Planning System Prompt',
             description: 'Comprehensive system prompt for constraint-aware meal planning',
-            inputSchema: {
+            argsSchema: {
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 format: z.enum(['full', 'short', 'template']).optional(),
                 groupId: z.string().optional()
@@ -237,7 +237,7 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         meta: {
             title: 'Plan Family Meals',
             description: 'Generate meal suggestions with dietary constraints and preferences',
-            inputSchema: {
+            argsSchema: {
                 groupId: z.string(),
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional(),
@@ -253,7 +253,7 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         meta: {
             title: 'Quick Meal Suggestions',
             description: 'Get quick, easy meal ideas for the family',
-            inputSchema: {
+            argsSchema: {
                 groupId: z.string(),
                 language: z.enum(['en', 'fr', 'es']).optional()
             }
@@ -265,7 +265,7 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         meta: {
             title: 'Weekly Meal Plan',
             description: 'Create a comprehensive weekly meal plan with shopping list',
-            inputSchema: {
+            argsSchema: {
                 groupId: z.string(),
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 days: z.number().int().min(1).max(14).optional(),

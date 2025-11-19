@@ -172,8 +172,8 @@ describe('Family Prompts', () => {
 
         test('prompts should have input schema validation', () => {
             for (const prompt of allFamilyPrompts()) {
-                expect(prompt.meta).toHaveProperty('inputSchema');
-                expect(typeof prompt.meta.inputSchema).toBe('object');
+                expect(prompt.meta).toHaveProperty('argsSchema');
+                expect(typeof prompt.meta.argsSchema).toBe('object');
             }
         });
     });
