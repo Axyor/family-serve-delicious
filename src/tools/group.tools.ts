@@ -64,7 +64,9 @@ export const getGroupsSummaryTool = () => ({
 export const getGroupRecipeContextHandler = async (args: any) => {
 
     const sanitized = InputSanitizer.sanitizeObject(args);
-    const { id, anonymize = true } = sanitized as { id: string; anonymize?: boolean };
+    const { id } = sanitized as { id: string; anonymize?: boolean };
+    const allowRaw = process.env.ALLOW_RAW_CONTEXT === 'true';
+    const anonymize = allowRaw ? (sanitized.anonymize ?? true) : true;
     const group = await getDatabase().getGroupService().getGroup(id);
     if (!group) return { content: [{ type: 'text' as const, text: `Group not found: ${id}` }] } as any;
     const context = buildRecipeContext(group, anonymize);
