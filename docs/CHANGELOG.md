@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2025-11-21
+
+### 🐛 Bug Fixes
+- **MCP Server**: Fixed JSON parsing errors in Claude Desktop
+  - Removed emojis from all console log statements that were causing invalid JSON in MCP stdio communication
+  - Affected files: `index.ts`, `db.ts`, `sanitization.ts`, `output-validation.ts`
+  - MCP server now starts cleanly without JSON parsing warnings
+
+### 🔧 Updated
+- **Dependencies**: Updated `@axyor/family-serve-database` to v2.2.2
+  - Enhanced database package with latest improvements
+  - Better type safety and error handling
+
+### 🔧 Improved
+- **Logging**: Replaced emoji prefixes with plain text for better MCP protocol compatibility
+- **Stability**: Enhanced MCP server startup reliability
+
 ## [2.1.0] - 2025-11-15
 
 ### 🔒 Security Enhancements
