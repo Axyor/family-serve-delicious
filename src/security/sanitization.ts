@@ -29,7 +29,7 @@ export class InputSanitizer {
         /assistant\s*:/i,
         /\[INST\]/i,
         /\[\/INST\]/i,
-        
+
         /<script[^>]*>/i,
         /<iframe[^>]*>/i,
         /javascript:/i,
@@ -37,7 +37,7 @@ export class InputSanitizer {
         /\beval\s*\(/i,
         /\bexec\s*\(/i,
         /\bFunction\s*\(/i,
-        
+
         /\$where/i,
         /\$ne/i,
         /\$gt/i,
@@ -80,7 +80,7 @@ export class InputSanitizer {
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
         if (cleaned.length > this.MAX_LENGTH) {
-            console.warn(`⚠️  Input truncated: ${fieldName} exceeded max length (${cleaned.length} > ${this.MAX_LENGTH})`);
+            console.warn(`Input truncated: ${fieldName} exceeded max length (${cleaned.length} > ${this.MAX_LENGTH})`);
             cleaned = cleaned.slice(0, this.MAX_LENGTH);
         }
 
@@ -89,7 +89,7 @@ export class InputSanitizer {
         for (const pattern of this.SUSPICIOUS_PATTERNS) {
             if (pattern.test(cleaned)) {
                 const patternStr = pattern.toString();
-                console.warn(`🚨 Security: Suspicious pattern detected in ${fieldName}: ${patternStr}`);
+                console.warn(`Security: Suspicious pattern detected in ${fieldName}: ${patternStr}`);
                 throw new SecurityError(
                     `Input rejected: suspicious pattern detected in ${fieldName}`
                 );
@@ -117,7 +117,7 @@ export class InputSanitizer {
         }
 
         if (Array.isArray(obj)) {
-            return obj.map((item, index) => 
+            return obj.map((item, index) =>
                 this.sanitizeObject(item, `${parentKey}[${index}]`)
             );
         }
@@ -156,12 +156,12 @@ export class InputSanitizer {
         try {
             sanitized = sanitizeHtml(value, this.HTML_SANITIZER_CONFIG);
         } catch (error) {
-            console.error(`🚨 Security: HTML sanitizer error in ${fieldName}`, error);
+            console.error(`Security: HTML sanitizer error in ${fieldName}`, error);
             throw new SecurityError(`Input rejected: HTML sanitizer failure for ${fieldName}`);
         }
 
         if (sanitized !== canonicalSafe) {
-            console.warn(`🚨 Security: HTML markup detected in ${fieldName}`);
+            console.warn(`Security: HTML markup detected in ${fieldName}`);
             throw new SecurityError(`Input rejected: HTML markup detected in ${fieldName}`);
         }
     }

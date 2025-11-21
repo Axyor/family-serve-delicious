@@ -128,15 +128,15 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const cuisinesLikedSet: Set<string> = new Set();
     const dislikesSet: Set<string> = new Set();
     const patterns = loadPrefPatterns() || {};
-    
+
     const normalizeStringList = (arr?: string[]): string[] => {
         if (!Array.isArray(arr)) return [];
         return Array.from(new Set(
             arr.map(s => s.toLowerCase().trim())
-               .filter(Boolean)
+                .filter(Boolean)
         )).sort((a, b) => b.length - a.length);
     };
-    
+
     const dislikeIndicators = normalizeStringList(patterns.dislikeIndicators);
     const avoidIndicators = normalizeStringList(patterns.avoidIndicators);
     const excludeIndicators = normalizeStringList(patterns.excludeIndicators);
@@ -145,10 +145,10 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const extractNegativeTokens = (text: string): string[] => {
         const raw = text.trim();
         if (!raw) return [];
-        
+
         const lower = raw.toLowerCase();
         const allIndicators = [...dislikeIndicators, ...avoidIndicators, ...excludeIndicators];
-        
+
         for (const indicator of allIndicators) {
             if (lower.startsWith(indicator + ' ')) {
                 const rest = lower.slice(indicator.length).trim();
@@ -167,7 +167,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
                 }
             }
         }
-        
+
         const preferences = member.dietaryProfile?.preferences;
         if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
             const likes = preferences.likes || [];
@@ -184,7 +184,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const processPreferences = (member: any, dislikesSet: Set<string>) => {
         const preferences = member.dietaryProfile?.preferences;
         if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return;
-        
+
         const dislikes = preferences.dislikes || [];
         if (Array.isArray(dislikes)) {
             dislikes.forEach((item: string) => {
@@ -198,14 +198,14 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const processAllergies = (member: any, allergyMap: Record<string, Set<string>>) => {
         const allergies = member.dietaryProfile?.allergies;
         if (!Array.isArray(allergies)) return;
-        
+
         for (const allergy of allergies) {
             const name = typeof allergy === 'string' ? allergy : (allergy?.name ?? allergy?.substance);
             if (!name) continue;
-            
+
             const key = normalizeAllergen(String(name));
             if (!key) continue;
-            
+
             if (!allergyMap[key]) allergyMap[key] = new Set();
             allergyMap[key].add(member.id);
         }
@@ -214,19 +214,19 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const processRestrictions = (member: any, hardRestrictionSet: Set<string>, softRestrictionSet: Set<string>) => {
         const restrictions = member.dietaryProfile?.restrictions;
         if (!Array.isArray(restrictions)) return;
-        
+
         for (const restriction of restrictions) {
             if (restriction == null) continue;
-            
+
             if (typeof restriction === 'string') {
                 hardRestrictionSet.add(restriction);
                 continue;
             }
-            
+
             const type = restriction.type || restriction.category;
             const reason = restriction.reason || restriction.code || restriction.name;
             if (!reason) continue;
-            
+
             const typeUpper = String(type).toUpperCase();
             if (typeUpper === 'FORBIDDEN') {
                 hardRestrictionSet.add(reason);
