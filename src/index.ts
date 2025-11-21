@@ -28,7 +28,7 @@ const wrapHandlerWithValidation = (handler: (...args: any[]) => Promise<any>, to
         const validation = OutputValidator.validateOutput(result, { toolName });
 
         if (!validation.safe) {
-            console.warn(`⚠️  Output validation warnings for ${toolName}:`, validation.warnings);
+            console.warn(`Output validation warnings for ${toolName}:`, validation.warnings);
             const strictness = OutputValidator.getStrictness();
 
             if (strictness === 'mask') {

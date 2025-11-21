@@ -5,18 +5,30 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY .npmrc* ./
+
+ARG GITHUB_TOKEN
+
+RUN echo "🔧 Setting up GitHub npm authentication..." && \
+    if [ -n "$GITHUB_TOKEN" ]; then \
+        echo "📝 Using GITHUB_TOKEN from build argument"; \
+        echo "@axyor:registry=https://npm.pkg.github.com" > .npmrc; \
+        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc; \
+    elif [ -f ".npmrc" ]; then \
+        echo "📝 Using existing .npmrc file"; \
+    else \
+        echo "❌ No authentication method found!"; \
+        echo "Please set GITHUB_TOKEN in .env file"; \
+        exit 1; \
+    fi
 
 RUN npm install
+
+RUN rm -f .npmrc
 
 COPY src/ ./src/
 COPY config/ ./config/
 
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-RUN chown -R nodejs:nodejs /app
-USER nodejs
-
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm run build && npm start"]

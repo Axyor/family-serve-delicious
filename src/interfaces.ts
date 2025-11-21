@@ -7,8 +7,8 @@ export interface PromptMeta {
 export interface PromptDefinition {
     name: string;
     meta: PromptMeta;
-    handler: (args: any) => Promise<{ 
-        messages: Array<{ 
+    handler: (args: any) => Promise<{
+        messages: Array<{
             role: 'user' | 'assistant';
             content: { type: 'text', text: string };
         }>;
@@ -18,10 +18,10 @@ export interface PromptDefinition {
 export type Language = 'en' | 'fr' | 'es';
 export type PromptFormat = 'full' | 'short' | 'template';
 
-export interface IAllergyAgg { 
-    substance: string; 
-    members: string[]; 
-    count: number; 
+export interface IAllergyAgg {
+    substance: string;
+    members: string[];
+    count: number;
 }
 
 export interface IPrefPatterns {
@@ -53,8 +53,9 @@ export interface IGroupRecipeContext {
     hash: string;
 }
 
-export interface Counters { 
-    [k: string]: number 
+export interface Counters {
+    [k: string]: number
 }
 
+// Type compatible with package EDietaryRestrictionType enum
 export type TDietaryRestrictionType = 'FORBIDDEN' | 'REDUCED';

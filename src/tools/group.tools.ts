@@ -26,7 +26,7 @@ export const findGroupByNameTool = () => ({
 });
 
 export const findMembersByRestrictionHandler = async (args: any) => {
-    
+
     const sanitized = InputSanitizer.sanitizeObject(args);
     const { groupId, restrictionType, reason } = sanitized as { groupId: string; restrictionType: TDietaryRestrictionType; reason?: string };
     const result = await getDatabase().getGroupService().findMembersByRestriction(groupId, restrictionType, reason);
@@ -44,12 +44,7 @@ export const getGroupsSummaryHandler = async (args: any) => {
 
     const sanitized = InputSanitizer.sanitizeObject(args);
     const { limit = 20, offset = 0 } = sanitized as { limit?: number; offset?: number };
-    const service: any = getDatabase().getGroupService();
-    let groups: any[] | undefined;
-    if (typeof service.listGroups === 'function') groups = await service.listGroups();
-    else if (typeof service.getAllGroups === 'function') groups = await service.getAllGroups();
-    else if (typeof service.getGroups === 'function') groups = await service.getGroups();
-    if (!groups) return { content: [{ type: 'text' as const, text: 'Listing groups not supported by current GroupService' }] } as any;
+    const groups = await getDatabase().getGroupService().listGroups();
     const total = groups.length;
     const slice = groups.slice(offset, offset + limit).map((g: any) => ({ id: g.id, name: g.name, membersCount: g.members.length }));
     const payload = { type: 'groups-summary', schemaVersion: 1, total, limit, offset, count: slice.length, groups: slice };
