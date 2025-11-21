@@ -3,14 +3,14 @@ import { Database } from '@axyor/family-serve-database';
 let db: Database | undefined;
 
 export const initializeDatabase = async (mongoUri: string) => {
-    console.log('🔄 Initializing database connection...');
+    console.log('Initializing database connection...');
     db = await Database.initialize(mongoUri);
-    console.log('✅ Database initialized successfully');
+    console.log('Database initialized successfully');
     return db;
 };
 
-export const setDatabase = (database: Database) => { 
-    db = database; 
+export const setDatabase = (database: Database) => {
+    db = database;
 };
 
 export const getDatabase = (): Database => {
@@ -20,9 +20,9 @@ export const getDatabase = (): Database => {
 
 export const disconnectDatabase = async () => {
     if (db) {
-        console.log('🔄 Disconnecting from database...');
+        console.log('Disconnecting from database...');
         await db.disconnect();
-        console.log('✅ Database disconnected');
+        console.log('Database disconnected');
         db = undefined;
     }
 };

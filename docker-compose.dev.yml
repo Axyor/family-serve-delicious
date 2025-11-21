@@ -46,6 +46,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     container_name: family-serve-app-dev
     restart: unless-stopped
     ports:

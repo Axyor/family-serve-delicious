@@ -203,7 +203,7 @@ export class OutputValidator {
             this.ensureDirectory(path.dirname(logPath));
             appendFileSync(logPath, `${JSON.stringify(entry)}\n`, { encoding: 'utf8' });
         } catch (error) {
-            console.error('⚠️ Failed to persist output validation log entry', error);
+            console.error('Failed to persist output validation log entry', error);
         }
     }
 
