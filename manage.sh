@@ -156,7 +156,7 @@ lm_studio_config() {
         "NODE_ENV": "production",
         "OUTPUT_VALIDATION_MODE": "warn",
         "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
-        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
+        "OUTPUT_VALIDATION_LOG_PATH": "$current_dir/logs/output-validation.log"
       }
     }
   }
@@ -210,7 +210,7 @@ claude_desktop_config() {
         "NODE_ENV": "production",
         "OUTPUT_VALIDATION_MODE": "warn",
         "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
-        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
+        "OUTPUT_VALIDATION_LOG_PATH": "$current_dir/logs/output-validation.log"
       }
     }
   }
