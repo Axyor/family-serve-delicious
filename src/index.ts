@@ -7,7 +7,9 @@ import { allGroupTools } from './tools/group.tools';
 import { allFamilyPrompts } from './prompts/family.prompts';
 import { OutputValidator } from './security/output-validation';
 
-config();
+if (process.env.NODE_ENV !== 'production') {
+    config();
+}
 
 export * from './interfaces';
 
@@ -57,11 +59,11 @@ const start = async () => {
 
         if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI must be defined in environment variables');
         await initializeDatabase(process.env.MONGODB_URI);
-        console.log('Successfully connected to MongoDB');
+        console.error('Successfully connected to MongoDB');
 
         const transport = new StdioServerTransport();
         await server.connect(transport);
-        console.log('MCP Server started successfully');
+        console.error('MCP Server started successfully');
     } catch (error) {
         console.error('Failed to start:', error);
         process.exit(1);

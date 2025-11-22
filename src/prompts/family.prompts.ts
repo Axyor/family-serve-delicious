@@ -6,7 +6,7 @@ import { PromptMeta, PromptDefinition, Language, PromptFormat } from '../interfa
 const readPromptFile = (language: Language, format: PromptFormat): string => {
     const promptsDir = path.join(__dirname, '..', 'prompts');
     let filename: string;
-    
+
     switch (format) {
         case 'full':
             filename = language === 'en' ? 'system-full.md' : `system-full.${language}.md`;
@@ -18,9 +18,9 @@ const readPromptFile = (language: Language, format: PromptFormat): string => {
             filename = language === 'en' ? 'system.template.json' : `system.template.${language}.json`;
             break;
     }
-    
+
     const filePath = path.join(promptsDir, language, filename);
-    
+
     try {
         return fs.readFileSync(filePath, 'utf-8');
     } catch (error) {
@@ -29,19 +29,19 @@ const readPromptFile = (language: Language, format: PromptFormat): string => {
 };
 
 export const mealPlanningSystemPromptHandler = async (args: any) => {
-    const { language = 'en', format = 'full', groupId } = args as { 
-        language?: Language; 
+    const { language = 'en', format = 'full', groupId } = args as {
+        language?: Language;
         format?: PromptFormat;
         groupId?: string;
     };
-    
+
     let promptContent = readPromptFile(language, format);
-    
+
     if (groupId) {
         const contextNote = `\n\n## Current Group Context\nThis prompt is being used for group ID: ${groupId}. Use the MCP tools to fetch the current group context before planning meals.\n`;
         promptContent += contextNote;
     }
-    
+
     return {
         messages: [
             {
@@ -56,13 +56,13 @@ export const mealPlanningSystemPromptHandler = async (args: any) => {
 };
 
 export const constraintAwareMealPlanningHandler = async (args: any) => {
-    const { 
-        language = 'en', 
-        groupId, 
-        mealType, 
-        servings, 
+    const {
+        language = 'en',
+        groupId,
+        mealType,
+        servings,
         budget,
-        cuisinePreference 
+        cuisinePreference
     } = args as {
         language?: Language;
         groupId: string;
@@ -71,43 +71,43 @@ export const constraintAwareMealPlanningHandler = async (args: any) => {
         budget?: 'low' | 'medium' | 'high';
         cuisinePreference?: string;
     };
-    
+
     const templateContent = readPromptFile(language, 'template');
     const template = JSON.parse(templateContent);
-    
+
     let promptText = readPromptFile(language, 'full');
-    
+
     const instructions = [`\n\n## Current Planning Task`];
-    
+
     if (groupId) {
         instructions.push(`Target Group ID: ${groupId}`);
         instructions.push(`FIRST: Use find-group-by-name or group-recipe-context to load group constraints.`);
     }
-    
+
     if (mealType) {
         instructions.push(`Meal Type: ${mealType}`);
         instructions.push(`Focus on ${mealType}-appropriate dishes and timing.`);
     }
-    
+
     if (servings) {
         instructions.push(`Target Servings: ${servings}`);
         instructions.push(`Scale recipes and portions accordingly.`);
     }
-    
+
     if (budget) {
         instructions.push(`Budget Level: ${budget}`);
         instructions.push(`Consider cost-effective ingredients and preparation methods.`);
     }
-    
+
     if (cuisinePreference) {
         instructions.push(`Cuisine Preference: ${cuisinePreference}`);
         instructions.push(`Prioritize ${cuisinePreference} dishes while respecting all dietary constraints.`);
     }
-    
+
     instructions.push(`\nRemember: Safety first! Exclude ALL allergens and FORBIDDEN restrictions.`);
-    
+
     promptText += instructions.join('\n');
-    
+
     return {
         messages: [
             {
@@ -122,13 +122,13 @@ export const constraintAwareMealPlanningHandler = async (args: any) => {
 };
 
 export const quickMealSuggestionHandler = async (args: any) => {
-    const { language = 'en', groupId } = args as { 
-        language?: Language; 
-        groupId: string; 
+    const { language = 'en', groupId } = args as {
+        language?: Language;
+        groupId: string;
     };
-    
+
     const shortPrompt = readPromptFile(language, 'short');
-    
+
     const quickInstructions = `
 ${shortPrompt}
 
@@ -143,7 +143,7 @@ Please provide 3-5 quick meal suggestions that are:
 
 Format: Brief meal name, key ingredients, prep time, why it works for this group.
 `;
-    
+
     return {
         messages: [
             {
@@ -158,9 +158,9 @@ Format: Brief meal name, key ingredients, prep time, why it works for this group
 };
 
 export const weeklyMealPlanHandler = async (args: any) => {
-    const { 
-        language = 'en', 
-        groupId, 
+    const {
+        language = 'en',
+        groupId,
         days = 7,
         includeBreakfast = false,
         includeLunch = true,
@@ -173,14 +173,14 @@ export const weeklyMealPlanHandler = async (args: any) => {
         includeLunch?: boolean;
         includeDinner?: boolean;
     };
-    
+
     const fullPrompt = readPromptFile(language, 'full');
-    
+
     const meals = [];
     if (includeBreakfast) meals.push('breakfast');
-    if (includeLunch) meals.push('lunch'); 
+    if (includeLunch) meals.push('lunch');
     if (includeDinner) meals.push('dinner');
-    
+
     const weeklyInstructions = `
 ${fullPrompt}
 
@@ -204,7 +204,7 @@ OUTPUT FORMAT:
 - Shopping list organized by category
 - Prep time estimates
 `;
-    
+
     return {
         messages: [
             {
