@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2025-12-07
+
+### ✨ Added
+- **Rotating Logger**: New rotating log system with automatic file rotation
+  - Implemented `rotating-logger.ts` utility for better log management
+  - Automatic log rotation based on size and date
+  - Comprehensive test coverage for logging functionality
+  - Enhanced development and production logging capabilities
+
+- **Configuration Examples**: Added Gemini MCP configuration example
+  - New `gemini_mcp_config.example.json` for Google Gemini integration
+  - Updated configuration documentation
+
+- **Enhanced Interfaces**: Expanded TypeScript interfaces for better type safety
+  - Enhanced `interfaces.ts` with more comprehensive type definitions
+  - Improved type coverage across the codebase
+
+### 🔧 Updated
+- **Dependencies**: Updated MCP SDK to latest version
+  - Updated `@modelcontextprotocol/sdk` for improved protocol support
+  - Updated related dependencies in `package.json` and `package-lock.json`
+
+- **MCP Tools**: Significant improvements to group tools functionality
+  - Enhanced `group.tools.ts` with better error handling and validation
+  - Improved tool responses and data structures
+  - Better integration with MCP protocol
+
+- **Prompts System**: Improved multilingual prompt templates
+  - Enhanced English, French, and Spanish system prompts
+  - Better prompt structure and clarity
+  - Improved `family.prompts.ts` with enhanced prompt generation
+
+### 🐛 Bug Fixes
+- **MCP Protocol**: Resolved protocol violations and improved compliance
+  - Fixed protocol violations in MCP server implementation
+  - Better handling of MCP resources and tools
+  - Improved error responses and validation
+
+### 🔧 Improved
+- **Code Quality**: Significant refactoring and cleanup
+  - Simplified `group.helpers.ts` by removing redundant code
+  - Enhanced `output-validation.ts` with better validation logic
+  - Cleaned up `sanitization.ts` by removing unused functions
+  - Better separation of concerns across modules
+
+- **Testing**: Enhanced test coverage
+  - New integration tests for rotating logs
+  - Updated unit tests for prompts and logger
+  - Improved test reliability and coverage
+
+- **Development Tools**: Enhanced management script
+  - Improved `manage.sh` with additional utilities
+  - Better development workflow support
+
+- **Documentation**: Updated configuration examples
+  - Better `.env.example` with comprehensive environment variables
+  - Improved MCP configuration examples for Claude Desktop and LM Studio
+
 ## [2.1.1] - 2025-11-21
 
 ### 🐛 Bug Fixes
