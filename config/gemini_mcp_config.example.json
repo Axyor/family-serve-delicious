@@ -1,5 +1,5 @@
 {
-  "servers": {
+  "mcpServers": {
     "family-serve-delicious": {
       "command": "node",
       "args": ["<PATH_TO_PROJECT>/dist/index.js"],

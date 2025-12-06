@@ -1,26 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { IAllergyAgg, IPrefPatterns, IGroupRecipeContext, Counters } from '../interfaces';
+import { IAllergyAgg, IGroupRecipeContext, Counters, GroupInput, MemberInput } from '../interfaces';
 
-export const prune = (value: any): any => {
+const prune = <T>(value: T): T | undefined => {
     if (Array.isArray(value)) {
         const arr = value.map(v => prune(v)).filter(v => v !== undefined);
-        return arr.length ? arr : undefined;
+        return (arr.length ? arr : undefined) as T | undefined;
     }
     if (value && typeof value === 'object') {
-        const out: any = {};
+        const out: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(value)) {
             const pv = prune(v);
             if (pv !== undefined && !(Array.isArray(pv) && pv.length === 0)) out[k] = pv;
         }
-        return Object.keys(out).length ? out : undefined;
+        return (Object.keys(out).length ? out : undefined) as T | undefined;
     }
     if (value === null || value === undefined || value === '') return undefined;
     return value;
 };
 
-export const ageGroup = (age?: number) => {
+const ageGroup = (age?: number) => {
     if (age == null) return undefined;
     if (age < 13) return 'child';
     if (age < 18) return 'teen';
@@ -71,7 +71,7 @@ class AllergenSynonymIndex {
     }
 }
 
-export function createAllergenSynonymIndex() {
+function createAllergenSynonymIndex() {
     return new AllergenSynonymIndex();
 }
 
@@ -83,35 +83,11 @@ const normalizeAllergen = (raw: string): string => {
     return allergenIndex.getCanonical(cleaned) || cleaned;
 };
 
-let prefPatterns: IPrefPatterns | null = null;
-let cachedSplitRegex: RegExp | null = null;
-let cachedSplitPattern: string | null = null;
 
-const getSplitRegex = (pattern?: string): RegExp => {
-    const regexPattern = pattern || ',|;';
-    if (cachedSplitPattern === regexPattern && cachedSplitRegex) {
-        return cachedSplitRegex;
-    }
-    cachedSplitPattern = regexPattern;
-    cachedSplitRegex = new RegExp(regexPattern);
-    return cachedSplitRegex;
-};
 
-const loadPrefPatterns = () => {
-    if (prefPatterns) return prefPatterns;
-    try {
-        const file = path.resolve(process.cwd(), 'config/preference-patterns.json');
-        prefPatterns = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    } catch (error) {
-        console.error('Error loading preference patterns configuration:', error);
-        prefPatterns = {};
-    }
-    return prefPatterns;
-};
-
-export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeContext => {
+export const buildRecipeContext = (group: GroupInput, anonymize = true): IGroupRecipeContext => {
     const members = group.members || [];
-    const memberContexts = members.map((m: any, idx: number) => {
+    const memberContexts = members.map((m: MemberInput, idx: number) => {
         const ag = ageGroup(m.age);
         const alias = `M${idx + 1}`;
         return anonymize ? { id: m.id, alias, ageGroup: ag } : { id: m.id, firstName: m.firstName, lastName: m.lastName, ageGroup: ag };
@@ -127,38 +103,9 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     const softRestrictionSet: Set<string> = new Set();
     const cuisinesLikedSet: Set<string> = new Set();
     const dislikesSet: Set<string> = new Set();
-    const patterns = loadPrefPatterns() || {};
 
-    const normalizeStringList = (arr?: string[]): string[] => {
-        if (!Array.isArray(arr)) return [];
-        return Array.from(new Set(
-            arr.map(s => s.toLowerCase().trim())
-                .filter(Boolean)
-        )).sort((a, b) => b.length - a.length);
-    };
 
-    const dislikeIndicators = normalizeStringList(patterns.dislikeIndicators);
-    const avoidIndicators = normalizeStringList(patterns.avoidIndicators);
-    const excludeIndicators = normalizeStringList(patterns.excludeIndicators);
-    const splitRegex = getSplitRegex(patterns.splitDelimitersRegex);
-
-    const extractNegativeTokens = (text: string): string[] => {
-        const raw = text.trim();
-        if (!raw) return [];
-
-        const lower = raw.toLowerCase();
-        const allIndicators = [...dislikeIndicators, ...avoidIndicators, ...excludeIndicators];
-
-        for (const indicator of allIndicators) {
-            if (lower.startsWith(indicator + ' ')) {
-                const rest = lower.slice(indicator.length).trim();
-                return rest.split(splitRegex).map(t => t.trim()).filter(Boolean);
-            }
-        }
-        return [];
-    };
-
-    const processCuisinePreferences = (member: any, cuisinesLikedSet: Set<string>) => {
+    const processCuisinePreferences = (member: MemberInput, cuisinesLikedSet: Set<string>) => {
 
         if (Array.isArray(member.cuisinePreferences)) {
             for (const cuisine of member.cuisinePreferences) {
@@ -181,7 +128,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         }
     };
 
-    const processPreferences = (member: any, dislikesSet: Set<string>) => {
+    const processPreferences = (member: MemberInput, dislikesSet: Set<string>) => {
         const preferences = member.dietaryProfile?.preferences;
         if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return;
 
@@ -195,7 +142,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         }
     };
 
-    const processAllergies = (member: any, allergyMap: Record<string, Set<string>>) => {
+    const processAllergies = (member: MemberInput, allergyMap: Record<string, Set<string>>) => {
         const allergies = member.dietaryProfile?.allergies;
         if (!Array.isArray(allergies)) return;
 
@@ -211,7 +158,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
         }
     };
 
-    const processRestrictions = (member: any, hardRestrictionSet: Set<string>, softRestrictionSet: Set<string>) => {
+    const processRestrictions = (member: MemberInput, hardRestrictionSet: Set<string>, softRestrictionSet: Set<string>) => {
         const restrictions = member.dietaryProfile?.restrictions;
         if (!Array.isArray(restrictions)) return;
 
@@ -255,7 +202,7 @@ export const buildRecipeContext = (group: any, anonymize = true): IGroupRecipeCo
     });
 
     const cookingSkillSpread: Counters = {};
-    members.forEach((member: any) => {
+    members.forEach((member: MemberInput) => {
         if (member.cookingSkill) {
             cookingSkillSpread[member.cookingSkill] = (cookingSkillSpread[member.cookingSkill] || 0) + 1;
         }

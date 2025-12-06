@@ -8,7 +8,11 @@
         "NODE_ENV": "production",
         "OUTPUT_VALIDATION_MODE": "warn",
         "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
-        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log"
+        "OUTPUT_VALIDATION_LOG_PATH": "logs/output-validation.log",
+        "LOG_ROTATION_SIZE": "10M",
+        "LOG_ROTATION_MAX_FILES": "10",
+        "LOG_ROTATION_COMPRESS": "true",
+        "LOG_ROTATION_INTERVAL": "1d"
       }
     }
   }

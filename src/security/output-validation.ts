@@ -1,5 +1,6 @@
-import { appendFileSync, existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { RotatingLogger } from '../utils/rotating-logger';
 
 export type OutputValidationMode = 'warn' | 'mask' | 'block';
 
@@ -28,6 +29,8 @@ interface PatternDefinition {
 }
 
 export class OutputValidator {
+    private static logger: RotatingLogger | null = null;
+    
     private static readonly PII_PATTERNS: PatternDefinition[] = [
         {
             type: 'email',
@@ -95,7 +98,7 @@ export class OutputValidator {
         return 'warn';
     }
 
-    private static maskValue(value: any): any {
+    private static maskValue(value: unknown): unknown {
         if (value === null || value === undefined) {
             return value;
         }
@@ -121,7 +124,7 @@ export class OutputValidator {
             if (value instanceof Date) {
                 return value;
             }
-            const clone: Record<string, any> = {};
+            const clone: Record<string, unknown> = {};
             for (const [key, nestedValue] of Object.entries(value)) {
                 clone[key] = this.maskValue(nestedValue);
             }
@@ -152,7 +155,7 @@ export class OutputValidator {
         return { count, samples };
     }
 
-    private static collectFragments(value: any, fragments: string[] = []): string[] {
+    private static collectFragments(value: unknown, fragments: string[] = []): string[] {
         if (value === null || value === undefined) {
             return fragments;
         }
@@ -188,6 +191,21 @@ export class OutputValidator {
         return fragments;
     }
 
+    private static getLogger(): RotatingLogger {
+        if (!this.logger) {
+            const logPath = this.getAuditLogPath();
+            const maxSize = process.env.LOG_ROTATION_SIZE as '10M' | '20M' | '50M' | '100M' | undefined;
+            const interval = process.env.LOG_ROTATION_INTERVAL as '1d' | '7d' | '1h' | '1m' | undefined;
+            this.logger = new RotatingLogger(logPath, {
+                maxSize: maxSize || '10M',
+                maxFiles: Number(process.env.LOG_ROTATION_MAX_FILES) || 10,
+                compress: process.env.LOG_ROTATION_COMPRESS !== 'false',
+                interval: interval || '1d'
+            });
+        }
+        return this.logger;
+    }
+
     private static logWarnings(toolName: string, warnings: string[], findings: OutputValidationFinding[], size: number): void {
         const entry = {
             timestamp: new Date().toISOString(),
@@ -199,11 +217,16 @@ export class OutputValidator {
         };
 
         try {
-            const logPath = this.getAuditLogPath();
-            this.ensureDirectory(path.dirname(logPath));
-            appendFileSync(logPath, `${JSON.stringify(entry)}\n`, { encoding: 'utf8' });
+            this.getLogger().log(entry);
         } catch (error) {
             console.error('Failed to persist output validation log entry', error);
+        }
+    }
+
+    static async closeLogger(): Promise<void> {
+        if (this.logger) {
+            await this.logger.close();
+            this.logger = null;
         }
     }
 
@@ -214,9 +237,12 @@ export class OutputValidator {
     }
 
     private static getAuditLogPath(): string {
-        return process.env.OUTPUT_VALIDATION_LOG_PATH
+        const logPath = process.env.OUTPUT_VALIDATION_LOG_PATH
             ? path.resolve(process.env.OUTPUT_VALIDATION_LOG_PATH)
             : path.resolve(process.cwd(), 'logs', 'output-validation.log');
+        
+        this.ensureDirectory(path.dirname(logPath));
+        return logPath;
     }
 
     private static getLargeOutputThreshold(): number {

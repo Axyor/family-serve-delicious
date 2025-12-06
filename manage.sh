@@ -252,6 +252,62 @@ claude_desktop_help() {
     print_info "For detailed instructions, see: docs/CLAUDE_DESKTOP_SETUP.md"
 }
 
+gemini_config() {
+    print_status "Generating Gemini configuration..."
+    
+    local current_dir=$(pwd)
+    local config_file="config/gemini_mcp_config.json"
+    
+    local mongodb_uri="${MONGODB_URI:-mongodb://localhost:27017/family_serve}"
+    if [ -f ".env" ]; then
+        source .env 2>/dev/null || true
+        if [ -n "$MONGODB_USERNAME" ] && [ -n "$MONGODB_PASSWORD" ]; then
+            mongodb_uri="mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@localhost:27017/family_serve?authSource=admin"
+        fi
+    fi
+    
+    cat > "$config_file" << EOFGEMINICONFIG
+{
+  "mcpServers": {
+    "family-serve-delicious": {
+      "command": "node",
+      "args": ["$current_dir/dist/index.js"],
+      "env": {
+        "MONGODB_URI": "$mongodb_uri",
+        "NODE_ENV": "production",
+        "OUTPUT_VALIDATION_MODE": "warn",
+        "OUTPUT_VALIDATION_MAX_LENGTH": "50000",
+        "OUTPUT_VALIDATION_LOG_PATH": "$current_dir/logs/output-validation.log"
+      }
+    }
+  }
+}
+EOFGEMINICONFIG
+    
+    print_success "Configuration generated: $config_file"
+    print_info "Copy this configuration to your Gemini config file"
+    print_info "In VS Code, open the Command Palette (Ctrl+Shift+P) and search for 'Gemini: Open MCP Servers config file'"
+    echo ""
+    print_status "Configuration content:"
+    cat "$config_file"
+    echo ""
+    print_info "💡 Note: Make sure to start MongoDB before using Gemini:"
+    print_info "  npm run db:start"
+}
+
+gemini_help() {
+    print_status "Opening Gemini setup guide..."
+    print_info "Please open the VS Code Command Palette (Ctrl+Shift+P) and search for 'Gemini: Open MCP Servers config file' to configure the server."
+    echo ""
+    print_info "Quick setup summary:"
+    print_info "1. Install the Gemini extension in VS Code"
+    print_info "2. Use './manage.sh gemini config' to generate config"
+    print_info "3. Copy config to Gemini's MCP Servers config file"
+    print_info "4. Start MongoDB: npm run db:start"
+    print_info "5. Restart VS Code to load the server"
+    echo ""
+}
+
 reset_system() {
     print_warning "This will remove ALL Docker containers, networks, and volumes!"
     read -p "Are you sure? (y/N): " confirm
@@ -287,6 +343,8 @@ show_help() {
     echo "  lmstudio help      Open LM Studio setup guide"
     echo "  claude config      Generate Claude Desktop configuration"
     echo "  claude help        Show Claude Desktop setup guide"
+    echo "  gemini config      Generate Gemini configuration"
+    echo "  gemini help        Show Gemini setup guide"
     echo ""
     echo -e "${CYAN}System Operations:${NC}"  
     echo "  reset              Complete system reset (destructive)"
@@ -306,6 +364,7 @@ show_help() {
     echo "  npm run db:gui                 "
     echo "  ./manage.sh lmstudio config    "
     echo "  ./manage.sh claude config      "
+    echo "  ./manage.sh gemini config      "
 }
 case "${1:-help}" in
     "setup") project_setup ;;
@@ -325,6 +384,16 @@ case "${1:-help}" in
             "help") claude_desktop_help ;;
             *) 
                 print_error "Unknown claude command: $2"
+                print_info "Available: config, help"
+                ;;
+        esac
+        ;;
+    "gemini")
+        case "${2:-help}" in
+            "config") gemini_config ;;
+            "help") gemini_help ;;
+            *) 
+                print_error "Unknown gemini command: $2"
                 print_info "Available: config, help"
                 ;;
         esac
