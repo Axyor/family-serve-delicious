@@ -10,10 +10,6 @@ export class SecurityError extends Error {
     }
 }
 
-/**
- * Input Sanitizer - Cleans and validates user inputs
- * 
- */
 export class InputSanitizer {
 
     private static readonly MAX_LENGTH = 500;
@@ -58,15 +54,6 @@ export class InputSanitizer {
         }
     };
 
-    /**
-     * Sanitize a string input
-     * 
-     * @param input - The string to sanitize
-     * @param fieldName - The name of the field (for error reporting)
-     * @returns The sanitized string
-     * @throws {SecurityError} If a malicious pattern is detected
-     * @throws {Error} If input is not a string
-     */
     static sanitizeString(input: string, fieldName: string = 'input'): string {
 
         if (typeof input !== 'string') {
@@ -99,14 +86,7 @@ export class InputSanitizer {
         return cleaned;
     }
 
-    /**
-     * Sanitize an object recursively
-     * 
-     * @param obj - The object to sanitize
-     * @param parentKey - The parent key path (for error reporting)
-     * @returns The sanitized object
-     */
-    static sanitizeObject(obj: any, parentKey: string = 'args'): any {
+    static sanitizeObject(obj: unknown, parentKey: string = 'args'): unknown {
 
         if (obj === null || obj === undefined) {
             return obj;
@@ -123,7 +103,7 @@ export class InputSanitizer {
         }
 
         if (typeof obj === 'object') {
-            const sanitized: any = {};
+            const sanitized: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(obj)) {
                 const fieldPath = parentKey ? `${parentKey}.${key}` : key;
                 sanitized[key] = this.sanitizeObject(value, fieldPath);
@@ -134,18 +114,10 @@ export class InputSanitizer {
         return obj;
     }
 
-    /**
-     * Validate that sanitization is enabled
-     * Used in tests to ensure sanitization is not accidentally disabled
-     */
     static isEnabled(): boolean {
         return true;
     }
 
-    /**
-     * Get the maximum allowed length for inputs
-     * Useful for validation messages
-     */
     static getMaxLength(): number {
         return this.MAX_LENGTH;
     }

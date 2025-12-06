@@ -24,8 +24,8 @@ export { setDatabase, groupResourceHandler };
 const { name: resName, template, meta, handler } = groupResource();
 server.registerResource(resName, template, meta, handler);
 
-const wrapHandlerWithValidation = (handler: (...args: any[]) => Promise<any>, toolName: string) => {
-    return async (args: any) => {
+const wrapHandlerWithValidation = (handler: (args: unknown) => Promise<unknown>, toolName: string) => {
+    return async (args: unknown): Promise<unknown> => {
         const result = await handler(args);
         const validation = OutputValidator.validateOutput(result, { toolName });
 
@@ -47,7 +47,9 @@ const wrapHandlerWithValidation = (handler: (...args: any[]) => Promise<any>, to
 };
 
 for (const tool of allGroupTools()) {
-    const wrappedHandler = wrapHandlerWithValidation(tool.handler, tool.name);
+    // Cast needed: tool.handler has specific typed args, wrapHandlerWithValidation accepts unknown
+    const wrappedHandler = wrapHandlerWithValidation(tool.handler as any, tool.name);
+    // Cast needed: tool.meta has specific schemas that don't match the union type constraint
     server.registerTool(tool.name, tool.meta as any, wrappedHandler as any);
 }
 
@@ -72,6 +74,7 @@ const start = async () => {
 
 process.on('SIGINT', async () => {
     try {
+        await OutputValidator.closeLogger();
         await disconnectDatabase();
         console.log('Disconnected from MongoDB');
     } catch (e) {

@@ -28,7 +28,7 @@ const readPromptFile = (language: Language, format: PromptFormat): string => {
     }
 };
 
-export const mealPlanningSystemPromptHandler = async (args: any) => {
+export const mealPlanningSystemPromptHandler = async (args: Record<string, unknown>) => {
     const { language = 'en', format = 'full', groupId } = args as {
         language?: Language;
         format?: PromptFormat;
@@ -38,8 +38,11 @@ export const mealPlanningSystemPromptHandler = async (args: any) => {
     let promptContent = readPromptFile(language, format);
 
     if (groupId) {
-        const contextNote = `\n\n## Current Group Context\nThis prompt is being used for group ID: ${groupId}. Use the MCP tools to fetch the current group context before planning meals.\n`;
+        const contextNote = `\n\n## Current Group Context\nTarget Group ID: ${groupId}\nUse this ID directly with the MCP tools (group-recipe-context).\n`;
         promptContent += contextNote;
+    } else {
+        const inferenceNote = `\n\n## Smart Group Inference Required\nNo specific group was provided. Use smart inference:\n1. Call groups-summary to see available groups\n2. If only 1 group exists, auto-select it with brief confirmation\n3. If multiple groups, intelligently pick based on context or ask briefly\n4. Remember the selected group for conversation continuity\n`;
+        promptContent += inferenceNote;
     }
 
     return {
@@ -55,7 +58,7 @@ export const mealPlanningSystemPromptHandler = async (args: any) => {
     };
 };
 
-export const constraintAwareMealPlanningHandler = async (args: any) => {
+export const constraintAwareMealPlanningHandler = async (args: Record<string, unknown>) => {
     const {
         language = 'en',
         groupId,
@@ -65,7 +68,7 @@ export const constraintAwareMealPlanningHandler = async (args: any) => {
         cuisinePreference
     } = args as {
         language?: Language;
-        groupId: string;
+        groupId?: string;
         mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         servings?: number;
         budget?: 'low' | 'medium' | 'high';
@@ -81,7 +84,12 @@ export const constraintAwareMealPlanningHandler = async (args: any) => {
 
     if (groupId) {
         instructions.push(`Target Group ID: ${groupId}`);
-        instructions.push(`FIRST: Use find-group-by-name or group-recipe-context to load group constraints.`);
+        instructions.push(`Use group-recipe-context with this ID to load group constraints.`);
+    } else {
+        instructions.push(`No specific group provided - use smart inference:`);
+        instructions.push(`1. Call groups-summary to see available groups`);
+        instructions.push(`2. Auto-select if only 1 group, or pick most likely based on context`);
+        instructions.push(`3. Briefly confirm: "Planning for [Group Name]..."`);
     }
 
     if (mealType) {
@@ -121,21 +129,27 @@ export const constraintAwareMealPlanningHandler = async (args: any) => {
     };
 };
 
-export const quickMealSuggestionHandler = async (args: any) => {
+export const quickMealSuggestionHandler = async (args: Record<string, unknown>) => {
     const { language = 'en', groupId } = args as {
         language?: Language;
-        groupId: string;
+        groupId?: string;
     };
 
     const shortPrompt = readPromptFile(language, 'short');
 
-    const quickInstructions = `
+    let quickInstructions = `
 ${shortPrompt}
 
 ## Quick Meal Task
-Target Group: ${groupId}
+`;
 
-Please provide 3-5 quick meal suggestions that are:
+    if (groupId) {
+        quickInstructions += `Target Group: ${groupId}\n\n`;
+    } else {
+        quickInstructions += `No group specified - use smart inference to resolve the target group first.\n\n`;
+    }
+
+    quickInstructions += `Please provide 3-5 quick meal suggestions that are:
 1. Safe for all group members (check group-recipe-context)
 2. Easy to prepare (30 minutes or less)
 3. Use common ingredients
@@ -157,7 +171,7 @@ Format: Brief meal name, key ingredients, prep time, why it works for this group
     };
 };
 
-export const weeklyMealPlanHandler = async (args: any) => {
+export const weeklyMealPlanHandler = async (args: Record<string, unknown>) => {
     const {
         language = 'en',
         groupId,
@@ -167,7 +181,7 @@ export const weeklyMealPlanHandler = async (args: any) => {
         includeDinner = true
     } = args as {
         language?: Language;
-        groupId: string;
+        groupId?: string;
         days?: number;
         includeBreakfast?: boolean;
         includeLunch?: boolean;
@@ -181,16 +195,23 @@ export const weeklyMealPlanHandler = async (args: any) => {
     if (includeLunch) meals.push('lunch');
     if (includeDinner) meals.push('dinner');
 
-    const weeklyInstructions = `
+    let weeklyInstructions = `
 ${fullPrompt}
 
 ## Weekly Meal Planning Task
-Target Group: ${groupId}
-Planning Duration: ${days} days
+`;
+
+    if (groupId) {
+        weeklyInstructions += `Target Group: ${groupId}\n`;
+    } else {
+        weeklyInstructions += `No group specified - resolve target group using smart inference first.\n`;
+    }
+
+    weeklyInstructions += `Planning Duration: ${days} days
 Meals to Plan: ${meals.join(', ')}
 
 WORKFLOW:
-1. Load group-recipe-context for ${groupId}
+1. ${groupId ? `Load group-recipe-context for ${groupId}` : 'Resolve target group, then load group-recipe-context'}
 2. Create a ${days}-day meal plan covering: ${meals.join(', ')}
 3. Ensure variety in proteins, cuisines, and cooking methods
 4. Balance nutritional needs across the week
@@ -223,7 +244,7 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         name: 'meal-planning-system',
         meta: {
             title: 'Meal Planning System Prompt',
-            description: 'Comprehensive system prompt for constraint-aware meal planning',
+            description: 'Comprehensive system prompt for constraint-aware meal planning with smart group inference',
             argsSchema: {
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 format: z.enum(['full', 'short', 'template']).optional(),
@@ -236,9 +257,9 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         name: 'plan-family-meals',
         meta: {
             title: 'Plan Family Meals',
-            description: 'Generate meal suggestions with dietary constraints and preferences',
+            description: 'Generate meal suggestions with dietary constraints and preferences. GroupId optional - will use smart inference if not provided.',
             argsSchema: {
-                groupId: z.string(),
+                groupId: z.string().optional(),
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional(),
                 servings: z.number().int().positive().optional(),
@@ -252,9 +273,9 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         name: 'quick-meal-suggestions',
         meta: {
             title: 'Quick Meal Suggestions',
-            description: 'Get quick, easy meal ideas for the family',
+            description: 'Get quick, easy meal ideas. GroupId optional - will auto-resolve if not provided.',
             argsSchema: {
-                groupId: z.string(),
+                groupId: z.string().optional(),
                 language: z.enum(['en', 'fr', 'es']).optional()
             }
         },
@@ -264,9 +285,9 @@ export const allFamilyPrompts = (): PromptDefinition[] => [
         name: 'weekly-meal-plan',
         meta: {
             title: 'Weekly Meal Plan',
-            description: 'Create a comprehensive weekly meal plan with shopping list',
+            description: 'Create a comprehensive weekly meal plan with shopping list. GroupId optional - will use smart inference.',
             argsSchema: {
-                groupId: z.string(),
+                groupId: z.string().optional(),
                 language: z.enum(['en', 'fr', 'es']).optional(),
                 days: z.number().int().min(1).max(14).optional(),
                 includeBreakfast: z.boolean().optional(),
