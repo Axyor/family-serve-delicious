@@ -1,11 +1,12 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getDatabase } from '../db';
+import { ResourceContent, ResourceResult } from '../interfaces';
 
-export const groupResourceHandler = async (uri: URL, variables: Record<string, unknown>) => {
+export const groupResourceHandler = async (uri: URL, variables: Record<string, unknown>): Promise<ResourceResult> => {
     const groupId = variables.groupId as string;
     const group = await getDatabase().getGroupService().getGroup(groupId);
-    if (!group) return { contents: [] } as any;
-    return { contents: [{ uri: uri.href, text: JSON.stringify(group, null, 2) }] } as any;
+    if (!group) return { contents: [] };
+    return { contents: [{ uri: uri.href, text: JSON.stringify(group, null, 2) }] };
 };
 
 export const groupResource = () => ({
