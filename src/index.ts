@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { config } from 'dotenv';
 import { initializeDatabase, disconnectDatabase, setDatabase } from './db';
+import { ToolResult } from './interfaces';
 import { groupResource, groupResourceHandler } from './resources/group.resource';
 import { allGroupTools } from './tools/group.tools';
 import { allFamilyPrompts } from './prompts/family.prompts';
@@ -24,8 +25,8 @@ export { setDatabase, groupResourceHandler };
 const { name: resName, template, meta, handler } = groupResource();
 server.registerResource(resName, template, meta, handler);
 
-const wrapHandlerWithValidation = (handler: (args: unknown) => Promise<unknown>, toolName: string) => {
-    return async (args: unknown): Promise<unknown> => {
+const wrapHandlerWithValidation = (handler: (args: unknown) => Promise<ToolResult<Record<string, unknown>>>, toolName: string) => {
+    return async (args: unknown, extra: unknown): Promise<ToolResult<Record<string, unknown>>> => {
         const result = await handler(args);
         const validation = OutputValidator.validateOutput(result, { toolName });
 
@@ -34,7 +35,7 @@ const wrapHandlerWithValidation = (handler: (args: unknown) => Promise<unknown>,
             const strictness = OutputValidator.getStrictness();
 
             if (strictness === 'mask') {
-                return OutputValidator.maskPII(result);
+                return OutputValidator.maskPII(result) as ToolResult<Record<string, unknown>>;
             }
 
             if (strictness === 'block') {
@@ -47,10 +48,12 @@ const wrapHandlerWithValidation = (handler: (args: unknown) => Promise<unknown>,
 };
 
 for (const tool of allGroupTools()) {
-    // Cast needed: tool.handler has specific typed args, wrapHandlerWithValidation accepts unknown
-    const wrappedHandler = wrapHandlerWithValidation(tool.handler as any, tool.name);
-    // Cast needed: tool.meta has specific schemas that don't match the union type constraint
-    server.registerTool(tool.name, tool.meta as any, wrappedHandler as any);
+    const wrappedHandler = wrapHandlerWithValidation(tool.handler as unknown as (args: unknown) => Promise<ToolResult<Record<string, unknown>>>, tool.name);
+    server.registerTool(tool.name, {
+        description: tool.meta.description,
+        inputSchema: tool.meta.inputSchema,
+        outputSchema: tool.meta.outputSchema
+    }, wrappedHandler);
 }
 
 for (const prompt of allFamilyPrompts()) {
