@@ -130,6 +130,7 @@ export interface GroupsSummaryOutput {
 export interface ToolResult<T> {
     content: Array<{ type: 'text'; text: string }>;
     structuredContent?: T;
+    [key: string]: unknown;
 }
 
 export interface GroupInput {
