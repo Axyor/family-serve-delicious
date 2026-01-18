@@ -1,6 +1,6 @@
 {
   "name": "family-serve-delicious",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "A server to manage dietary profiles (preferences, needs, allergies) for a family or group.",
   "main": "dist/index.js",
   "scripts": {
@@ -53,7 +53,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@axyor/family-serve-database": "^2.2.2",
+    "@axyor/family-serve-database": "^2.3.0",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "dotenv": "^17.2.3",
     "mongodb": "^6.21.0",
