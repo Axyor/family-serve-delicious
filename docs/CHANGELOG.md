@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.3] - 2026-05-11
+
+### 🔧 Fixed & Security
+- **Dependency Updates**: Updated all core dependencies to their latest stable versions.
+- **Vulnerability Fixes**: Resolved all security vulnerabilities (including moderate and high severity issues) via `npm audit fix`.
+- **TypeScript 6.0**: Migrated to TypeScript 6.0 and confirmed build stability.
+- **Jest 30.4**: Updated test runner and verified all 104 test cases.
+
 ## [2.3.0] - 2025-12-07
 
 ### ✨ Added
