@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { getDatabase } from '../db';
 import { buildRecipeContext } from './group.helpers';
-import { 
-    TDietaryRestrictionType, 
+import {
+    TDietaryRestrictionType,
     IGroupRecipeContext,
     FindGroupByNameInput,
     FindMembersByRestrictionInput,
@@ -20,8 +21,13 @@ const findGroupByNameHandler = async (args: FindGroupByNameInput): Promise<ToolR
 
     const sanitized = InputSanitizer.sanitizeObject(args);
     const { name } = sanitized as FindGroupByNameInput;
-    const group = await getDatabase().getGroupService().findByName(name);
-    if (!group) return { content: [{ type: 'text' as const, text: `No group found for name: ${name}` }] };
+    let group;
+    try {
+        group = await getDatabase().getGroupService().findByName(name);
+    } catch (err) {
+        throw new McpError(ErrorCode.InternalError, `Database error while fetching group by name: ${name}`);
+    }
+    if (!group) throw new McpError(ErrorCode.InvalidParams, `No group found for name: ${name}`);
     const structured: GroupIdResolution = {
         type: 'group-id-resolution',
         schemaVersion: 1,
@@ -53,8 +59,13 @@ const findMembersByRestrictionHandler = async (args: FindMembersByRestrictionInp
 
     const sanitized = InputSanitizer.sanitizeObject(args);
     const { groupId, restrictionType, reason } = sanitized as FindMembersByRestrictionInput;
-    const result = await getDatabase().getGroupService().findMembersByRestriction(groupId, restrictionType, reason);
-    if (!result) return { content: [{ type: 'text' as const, text: 'Group not found or no matching members' }] };
+    let result;
+    try {
+        result = await getDatabase().getGroupService().findMembersByRestriction(groupId, restrictionType, reason);
+    } catch (err) {
+        throw new McpError(ErrorCode.InternalError, `Database error while fetching members for groupId: ${groupId}`);
+    }
+    if (!result) throw new McpError(ErrorCode.InvalidParams, `Group not found or no matching members for groupId: ${groupId}`);
     return { 
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         structuredContent: result as FindMembersByRestrictionOutput
@@ -87,17 +98,35 @@ export const findMembersByRestrictionTool = () => ({
 
 
 const getGroupsSummaryHandler = async (args: GetGroupsSummaryInput): Promise<ToolResult<GroupsSummaryOutput>> => {
-
     const sanitized = InputSanitizer.sanitizeObject(args);
     const { limit = 20, offset = 0 } = sanitized as GetGroupsSummaryInput;
-    const groups = await getDatabase().getGroupService().listGroups();
-    const total = groups.length;
-    const slice = groups.slice(offset, offset + limit).map((g: { id: string; name: string; members: unknown[] }): GroupSummaryItem => ({ id: g.id, name: g.name, membersCount: g.members.length }));
-    const payload: GroupsSummaryOutput = { type: 'groups-summary', schemaVersion: 1, total, limit, offset, count: slice.length, groups: slice };
-    return { 
-        content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
-        structuredContent: payload
-    };
+
+    let allGroups: Array<{ id: string; name: string; members: unknown[] }>;
+    let slice: GroupSummaryItem[];
+    try {
+        allGroups = await getDatabase().getGroupService().listGroups();
+        const total = allGroups.length;
+        slice = allGroups
+            .slice(offset, offset + limit)
+            .map((g): GroupSummaryItem => ({ id: g.id, name: g.name, membersCount: g.members.length }));
+
+        const payload: GroupsSummaryOutput = {
+            type: 'groups-summary',
+            schemaVersion: 1,
+            total,
+            limit,
+            offset,
+            count: slice.length,
+            groups: slice
+        };
+        return {
+            content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
+            structuredContent: payload
+        };
+    } catch (err) {
+        if (err instanceof McpError) throw err;
+        throw new McpError(ErrorCode.InternalError, `Database error while listing groups`);
+    }
 };
 export const getGroupsSummaryTool = () => ({
     name: 'groups-summary',
@@ -126,15 +155,19 @@ export const getGroupsSummaryTool = () => ({
 });
 
 const getGroupRecipeContextHandler = async (args: GetGroupRecipeContextInput): Promise<ToolResult<IGroupRecipeContext>> => {
-
     const sanitized = InputSanitizer.sanitizeObject(args) as GetGroupRecipeContextInput;
     const { id } = sanitized;
     const allowRaw = process.env.ALLOW_RAW_CONTEXT === 'true';
     const anonymize = allowRaw ? (sanitized.anonymize ?? true) : true;
-    const group = await getDatabase().getGroupService().getGroup(id);
-    if (!group) return { content: [{ type: 'text' as const, text: `Group not found: ${id}` }] };
+    let group;
+    try {
+        group = await getDatabase().getGroupService().getGroup(id);
+    } catch (err) {
+        throw new McpError(ErrorCode.InternalError, `Database error while fetching group: ${id}`);
+    }
+    if (!group) throw new McpError(ErrorCode.InvalidParams, `Group not found: ${id}`);
     const context = buildRecipeContext(group, anonymize);
-    return { 
+    return {
         content: [{ type: 'text' as const, text: JSON.stringify(context) }],
         structuredContent: context
     };

@@ -1,7 +1,9 @@
+import type { ZodRawShape } from 'zod';
+
 export interface PromptMeta {
     title: string;
     description: string;
-    argsSchema?: Record<string, any>;
+    argsSchema?: ZodRawShape;
 }
 
 export interface PromptDefinition {

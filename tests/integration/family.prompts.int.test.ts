@@ -1,5 +1,7 @@
 process.env.NODE_ENV = 'test';
 
+import path from 'path';
+
 jest.mock('@axyor/family-serve-database', () => ({
     Database: class Database { },
     EGender: { MALE: 'MALE', FEMALE: 'FEMALE' },
@@ -30,6 +32,8 @@ class ITMockDatabase {
 
 describe('MCP Server Prompts Integration', () => {
     beforeAll(() => {
+        const { initializePromptCache } = require('../../src/prompts/prompt-cache');
+        initializePromptCache(path.join(__dirname, '../../src/prompts'));
         importedSetDatabase(new ITMockDatabase() as any);
     });
 
