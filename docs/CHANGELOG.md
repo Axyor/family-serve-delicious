@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-06-24
+
+### ✨ Added
+- **Prompt File Cache**: New `prompt-cache.ts` utility for caching prompt file reads, reducing redundant I/O
+- **Argument Completions**: MCP argument completion support for tools (via `completions.ts`)
+- **Prompt Args Type Safety**: New `validate-prompt-args.ts` for Zod-based prompt argument validation
+- **MCP Structured Logging**: Server-side structured logging capability wired into MCP protocol
+
+### 🔧 Improved
+- **MCP Robustness**: Full MCP compliance pass — `McpError` usage, tool annotations, proper error propagation
+- **Real DB Pagination**: Group resource listing now uses real database pagination instead of in-memory slicing
+- **Resource Listing**: Improved MCP resource listing with proper cursor-based pagination
+- **Index Refactor**: Significant cleanup of `src/index.ts` for better separation of concerns
+- **Group Tools**: Enhanced `group.tools.ts` with better validation and MCP-compliant responses
+
+### 🔒 Security
+- **Dependency Updates**: Updated `package-lock.json` with latest compatible dependency versions
+
 ## [2.3.3] - 2026-05-11
 
 ### 🔧 Fixed & Security
