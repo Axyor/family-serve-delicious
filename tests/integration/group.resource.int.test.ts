@@ -16,12 +16,18 @@ jest.mock('@axyor/family-serve-database', () => ({
   default: class Database { },
 }));
 
-const { groupResourceHandler, setDatabase } = require('../../src/index');
+const { groupResourceHandler, groupResourceList, setDatabase } = require('../../src/index');
 
 type Mock = jest.MockedFunction<any> & ((...args: any[]) => any);
 
 class MockGroupService {
-  getGroup: Mock = jest.fn(async (id: string) => id === 'group-1' ? ({ id: 'group-1', name: 'Fam', members: [], updatedAt: new Date(), createdAt: new Date() }) : null);
+  getGroup: Mock = jest.fn(async (id: string) =>
+    id === 'group-1' ? ({ id: 'group-1', name: 'Fam', members: [], updatedAt: new Date(), createdAt: new Date() }) : null
+  );
+  listGroups: Mock = jest.fn(async () => [
+    { id: 'group-1', name: 'Fam', members: [] },
+    { id: 'group-2', name: 'TestFamily', members: [{}, {}] }
+  ]);
 }
 
 class LocalMockDatabase {
@@ -46,9 +52,19 @@ describe('Read-only: group resource', () => {
     expect(parsed.name).toBe('Fam');
   });
 
-  test('groupResourceHandler returns empty contents when group not found', async () => {
+  test('groupResourceHandler throws McpError when group not found', async () => {
     const uri = new URL('groups://unknown');
-    const res: any = await groupResourceHandler(uri, { groupId: 'unknown' });
-    expect(res.contents).toEqual([]);
+    await expect(groupResourceHandler(uri, { groupId: 'unknown' }))
+      .rejects.toMatchObject({ code: -32602 });
+  });
+
+  test('groupResourceList returns all groups as URIs', async () => {
+    const result = await groupResourceList();
+    expect(result.resources).toHaveLength(2);
+    expect(result.resources[0]).toMatchObject({
+      uri: 'groups://group-1',
+      name: 'Fam'
+    });
+    expect(result.resources[1].description).toContain('2');
   });
 });

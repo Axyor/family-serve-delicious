@@ -1,41 +1,20 @@
-import fs from 'fs';
-import path from 'path';
 import { z } from 'zod';
 import { PromptMeta, PromptDefinition, Language, PromptFormat } from '../interfaces';
-
-const readPromptFile = (language: Language, format: PromptFormat): string => {
-    const promptsDir = path.join(__dirname, '..', 'prompts');
-    let filename: string;
-
-    switch (format) {
-        case 'full':
-            filename = language === 'en' ? 'system-full.md' : `system-full.${language}.md`;
-            break;
-        case 'short':
-            filename = language === 'en' ? 'system.short.md' : `system.short.${language}.md`;
-            break;
-        case 'template':
-            filename = language === 'en' ? 'system.template.json' : `system.template.${language}.json`;
-            break;
-    }
-
-    const filePath = path.join(promptsDir, language, filename);
-
-    try {
-        return fs.readFileSync(filePath, 'utf-8');
-    } catch (error) {
-        throw new Error(`Unable to read prompt file: ${filePath}`);
-    }
-};
+import { getCachedPrompt } from './prompt-cache';
+import { validatePromptArgs } from '../utils/validate-prompt-args';
 
 export const mealPlanningSystemPromptHandler = async (args: Record<string, unknown>) => {
-    const { language = 'en', format = 'full', groupId } = args as {
+    const { language = 'en', format = 'full', groupId } = validatePromptArgs<{
         language?: Language;
         format?: PromptFormat;
         groupId?: string;
-    };
+    }>({
+        language: z.enum(['en', 'fr', 'es']).optional(),
+        format: z.enum(['full', 'short', 'template']).optional(),
+        groupId: z.string().optional()
+    }, args);
 
-    let promptContent = readPromptFile(language, format);
+    let promptContent = getCachedPrompt(language, format);
 
     if (groupId) {
         const contextNote = `\n\n## Current Group Context\nTarget Group ID: ${groupId}\nUse this ID directly with the MCP tools (group-recipe-context).\n`;
@@ -66,19 +45,26 @@ export const constraintAwareMealPlanningHandler = async (args: Record<string, un
         servings,
         budget,
         cuisinePreference
-    } = args as {
+    } = validatePromptArgs<{
         language?: Language;
         groupId?: string;
         mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         servings?: number;
         budget?: 'low' | 'medium' | 'high';
         cuisinePreference?: string;
-    };
+    }>({
+        language: z.enum(['en', 'fr', 'es']).optional(),
+        groupId: z.string().optional(),
+        mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional(),
+        servings: z.number().int().positive().optional(),
+        budget: z.enum(['low', 'medium', 'high']).optional(),
+        cuisinePreference: z.string().optional()
+    }, args);
 
-    const templateContent = readPromptFile(language, 'template');
+    const templateContent = getCachedPrompt(language, 'template');
     const template = JSON.parse(templateContent);
 
-    let promptText = readPromptFile(language, 'full');
+    let promptText = getCachedPrompt(language, 'full');
 
     const instructions = [`\n\n## Current Planning Task`];
 
@@ -130,12 +116,12 @@ export const constraintAwareMealPlanningHandler = async (args: Record<string, un
 };
 
 export const quickMealSuggestionHandler = async (args: Record<string, unknown>) => {
-    const { language = 'en', groupId } = args as {
-        language?: Language;
-        groupId?: string;
-    };
+    const { language = 'en', groupId } = validatePromptArgs<{ language?: Language; groupId?: string }>({
+        language: z.enum(['en', 'fr', 'es']).optional(),
+        groupId: z.string().optional()
+    }, args);
 
-    const shortPrompt = readPromptFile(language, 'short');
+    const shortPrompt = getCachedPrompt(language, 'short');
 
     let quickInstructions = `
 ${shortPrompt}
@@ -179,16 +165,23 @@ export const weeklyMealPlanHandler = async (args: Record<string, unknown>) => {
         includeBreakfast = false,
         includeLunch = true,
         includeDinner = true
-    } = args as {
+    } = validatePromptArgs<{
         language?: Language;
         groupId?: string;
         days?: number;
         includeBreakfast?: boolean;
         includeLunch?: boolean;
         includeDinner?: boolean;
-    };
+    }>({
+        language: z.enum(['en', 'fr', 'es']).optional(),
+        groupId: z.string().optional(),
+        days: z.number().int().min(1).max(14).optional(),
+        includeBreakfast: z.boolean().optional(),
+        includeLunch: z.boolean().optional(),
+        includeDinner: z.boolean().optional()
+    }, args);
 
-    const fullPrompt = readPromptFile(language, 'full');
+    const fullPrompt = getCachedPrompt(language, 'full');
 
     const meals = [];
     if (includeBreakfast) meals.push('breakfast');

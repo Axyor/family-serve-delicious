@@ -22,6 +22,25 @@ class MockDatabase {
   disconnect = jest.fn(async () => { });
 }
 
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+
+describe('wrapHandlerWithValidation', () => {
+  test('passes McpError through unchanged', async () => {
+    const original = new McpError(ErrorCode.InvalidParams, 'test error');
+    const handler = async () => { throw original; };
+    const wrapped = mod.wrapHandlerWithValidation(handler, 'test-tool');
+    await expect(wrapped({}, {})).rejects.toThrow(original);
+  });
+
+  test('wraps non-McpError as InternalError', async () => {
+    const handler = async () => { throw new Error('raw DB error'); };
+    const wrapped = mod.wrapHandlerWithValidation(handler, 'test-tool');
+    await expect(wrapped({}, {})).rejects.toMatchObject({
+      code: ErrorCode.InternalError
+    });
+  });
+});
+
 describe('Unit: graceful shutdown', () => {
   test('SIGINT triggers db.disconnect and process.exit(0)', async () => {
     const mockDb = new MockDatabase() as any;

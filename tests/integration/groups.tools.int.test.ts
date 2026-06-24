@@ -64,9 +64,27 @@ const groups = [
 ];
 
 class ITMockGroupService {
-    listGroups = jest.fn(async () => groups);
+    listGroups = jest.fn(async (params?: { limit?: number; offset?: number }) => {
+        const { limit = groups.length, offset = 0 } = params ?? {};
+        return groups.slice(offset, offset + limit);
+    });
     findByName = jest.fn(async (name: string) => groups.find(g => g.name === name) || null);
     getGroup = jest.fn(async (id: string) => groups.find(g => g.id === id) || null);
+    findMembersByRestriction = jest.fn(async (groupId: string, restrictionType: string, reason?: string) => {
+        const group = groups.find(g => g.id === groupId);
+        if (!group) return null;
+        return {
+            groupId: group.id,
+            groupName: group.name,
+            restrictionType,
+            reason,
+            matchingMembers: group.members.filter((m: any) =>
+                m.dietaryProfile?.restrictions?.some((r: any) =>
+                    r.type === restrictionType && (!reason || r.reason === reason)
+                )
+            ).map((m: any) => ({ id: m.id, firstName: m.firstName, lastName: m.lastName }))
+        };
+    });
 }
 class ITMockDatabase {
     svc = new ITMockGroupService();
@@ -85,6 +103,24 @@ describe('groups tools', () => {
         expect(payload.type).toBe('groups-summary');
         expect(payload.groups.length).toBe(4);
         expect(payload.groups[0].members).toBeUndefined();
+    });
+
+    test('groups-summary respects limit and offset via DB call', async () => {
+        const res: any = await toolMap['groups-summary']({ limit: 2, offset: 1 });
+        const payload = JSON.parse(res.content[0].text);
+
+        expect(payload.limit).toBe(2);
+        expect(payload.offset).toBe(1);
+        expect(payload.count).toBe(2);
+        expect(payload.groups[0].name).toBe('Beta'); // second group (offset 1)
+    });
+
+    test('groups-summary total reflects all groups, count reflects slice', async () => {
+        const res: any = await toolMap['groups-summary']({ limit: 2, offset: 0 });
+        const payload = JSON.parse(res.content[0].text);
+        expect(payload.total).toBe(4); // all seeded groups
+        expect(payload.count).toBe(2); // only requested slice
+        expect(payload.groups).toHaveLength(2);
     });
 
     test('group-recipe-context returns anonymized context with aggregated allergies/restrictions', async () => {
@@ -115,11 +151,26 @@ describe('groups tools', () => {
 
         expect(payload.softPreferences?.cuisinesLiked).toEqual(expect.arrayContaining(['pasta', 'sushi']));
         expect(payload.softPreferences?.dislikes).toEqual(expect.arrayContaining(['mushrooms', 'olives']));
-        
+
         const eggAllergy = payload.allergies.find((a: any) => a.substance === 'egg');
         expect(eggAllergy).toBeDefined();
         expect(eggAllergy.count).toBe(1);
-        
+
         expect(payload.softRestrictions).toEqual(expect.arrayContaining(['sugar']));
+    });
+
+    test('find-group-by-name throws McpError when group not found', async () => {
+        await expect(toolMap['find-group-by-name']({ name: 'nonexistent' }))
+            .rejects.toMatchObject({ code: -32602 }); // ErrorCode.InvalidParams
+    });
+
+    test('group-recipe-context throws McpError when group not found', async () => {
+        await expect(toolMap['group-recipe-context']({ id: 'bad-id' }))
+            .rejects.toMatchObject({ code: -32602 });
+    });
+
+    test('find-members-by-restriction throws McpError when group not found', async () => {
+        await expect(toolMap['find-members-by-restriction']({ groupId: 'bad-id', restrictionType: 'FORBIDDEN' }))
+            .rejects.toMatchObject({ code: -32602 });
     });
 });

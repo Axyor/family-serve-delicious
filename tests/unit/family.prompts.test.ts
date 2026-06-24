@@ -1,11 +1,14 @@
 process.env.NODE_ENV = 'test';
 
+import path from 'path';
 import { allFamilyPrompts } from '../../src/prompts/family.prompts';
+import { initializePromptCache } from '../../src/prompts/prompt-cache';
 
 describe('Family Prompts', () => {
     let prompts: Record<string, any> = {};
 
     beforeAll(() => {
+        initializePromptCache(path.join(__dirname, '../../src/prompts'));
         // Build prompt lookup map
         for (const prompt of allFamilyPrompts()) {
             prompts[prompt.name] = prompt;
@@ -153,6 +156,32 @@ describe('Family Prompts', () => {
             
             expect(result.messages[0].content.text).toContain('14 days');
             expect(result.messages[0].content.text).toContain('14-day meal plan');
+        });
+    });
+
+    describe('prompt args validation', () => {
+        test('meal-planning-system rejects invalid language', async () => {
+            await expect(
+                prompts['meal-planning-system'].handler({ language: 'de' })
+            ).rejects.toMatchObject({ code: -32602 }); // McpError InvalidParams
+        });
+
+        test('plan-family-meals rejects invalid mealType', async () => {
+            await expect(
+                prompts['plan-family-meals'].handler({ mealType: 'brunch' })
+            ).rejects.toMatchObject({ code: -32602 });
+        });
+
+        test('weekly-meal-plan rejects days out of range', async () => {
+            await expect(
+                prompts['weekly-meal-plan'].handler({ days: 100 })
+            ).rejects.toMatchObject({ code: -32602 });
+        });
+
+        test('meal-planning-system accepts valid args', async () => {
+            await expect(
+                prompts['meal-planning-system'].handler({ language: 'fr', format: 'short' })
+            ).resolves.toHaveProperty('messages');
         });
     });
 
